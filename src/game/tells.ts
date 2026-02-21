@@ -74,7 +74,7 @@ export const TELL_REGISTRY: TellDefinition[] = [
     label: 'Never breaks a pair',
     description: 'Will not use one card from a pair as a single play.',
     priority: 20,
-    confirmThreshold: 2,
+    confirmThreshold: 1,
     isApplicable: (hand) => Object.values(countByRank(hand)).some(n => n >= 2),
     filter: (candidates, _allValid, hand) => {
       const counts = countByRank(hand)
@@ -90,7 +90,7 @@ export const TELL_REGISTRY: TellDefinition[] = [
     label: 'Never breaks three-of-a-kind',
     description: 'Will not play singles or pairs from a triple.',
     priority: 10,
-    confirmThreshold: 2,
+    confirmThreshold: 1,
     isApplicable: (hand) => Object.values(countByRank(hand)).some(n => n >= 3),
     filter: (candidates, _allValid, hand) => {
       const counts = countByRank(hand)
@@ -111,7 +111,7 @@ export const TELL_REGISTRY: TellDefinition[] = [
     label: 'Never breaks a straight',
     description: 'Will not play singles from cards that form a sequence.',
     priority: 10,
-    confirmThreshold: 2,
+    confirmThreshold: 1,
     isApplicable: (hand) => getStraightCardIds(hand).size > 0,
     filter: (candidates, _allValid, hand) => {
       const inStraight = getStraightCardIds(hand)
@@ -127,7 +127,7 @@ export const TELL_REGISTRY: TellDefinition[] = [
     label: 'Never combines 2s',
     description: 'Only plays 2s as singles, never in combinations.',
     priority: 10,
-    confirmThreshold: 2,
+    confirmThreshold: 1,
     isApplicable: (hand) => hand.some(c => c.rank === '2'),
     filter: (candidates) => {
       return candidates.filter(move => {
@@ -142,14 +142,16 @@ export const TELL_REGISTRY: TellDefinition[] = [
     label: 'Always contests singles',
     description: 'Must play a single if it can beat the current single.',
     priority: 50,
-    confirmThreshold: 2,
+    confirmThreshold: 1,
     filter: (candidates, allValid, _hand, context) => {
       if (!context.currentTrick || context.currentTrick.type !== 'single') return candidates
-      // Re-admit all valid singles (even if a preservation tell removed them)
-      const allSingles = allValid.filter(m => m.type === 'single')
-      const nonSingles = candidates.filter(m => m.type !== 'single')
+      // Re-admit any valid singles that preservation tells may have removed.
+      // Only mutate the array if new singles are actually being added — otherwise
+      // the trigger-detection diff would fire spuriously on every contested single.
       const existingIds = new Set(candidates.filter(m => m.type === 'single').map(m => m.cards[0].id))
-      const newSingles = allSingles.filter(m => !existingIds.has(m.cards[0].id))
+      const newSingles = allValid.filter(m => m.type === 'single' && !existingIds.has(m.cards[0].id))
+      if (newSingles.length === 0) return candidates
+      const nonSingles = candidates.filter(m => m.type !== 'single')
       return [...nonSingles, ...candidates.filter(m => m.type === 'single'), ...newSingles]
     },
   },
@@ -348,11 +350,14 @@ export function assignBotTells(dateString: string, hands: [Hand, Hand, Hand, Han
 
   function pickTellsForBot(hand: Hand): TellDefinition[] {
     const eligible = TELL_REGISTRY.filter(t => !t.isApplicable || t.isApplicable(hand))
-    // Each bot gets 2–4 tells, chosen randomly from the seeded RNG
-    const count = 2 + Math.floor(rng() * 3) // 2, 3, or 4
+    // Each bot gets 2–4 distinct tells, chosen randomly from the seeded RNG
+    const count = Math.min(2 + Math.floor(rng() * 3), eligible.length) // 2, 3, or 4 (capped by pool)
+    const pool = [...eligible]
     const tells: TellDefinition[] = []
     for (let i = 0; i < count; i++) {
-      tells.push(eligible[Math.floor(rng() * eligible.length)])
+      const idx = Math.floor(rng() * pool.length)
+      tells.push(pool[idx])
+      pool.splice(idx, 1) // remove so it can't be picked again
     }
     return tells
   }

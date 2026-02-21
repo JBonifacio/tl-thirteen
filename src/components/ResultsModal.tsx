@@ -18,7 +18,7 @@ export function ResultsModal() {
 
   const [copied, setCopied] = useState(false)
 
-  if (!playerFinishPosition || !playerEndTime || !startTime) return null
+  if (!playerFinishPosition || playerEndTime === null || startTime === null) return null
 
   const elapsedMs = playerEndTime - startTime
   const position = playerFinishPosition

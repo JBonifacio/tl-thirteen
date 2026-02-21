@@ -1,6 +1,11 @@
 import { create } from 'zustand'
 import { Card } from '../game/cards'
 import { Move, isValidPlay } from '../game/moves'
+
+export interface LogEntry {
+  seat: number
+  move: Move | null // null = pass
+}
 import { getDailyDeal, Hand } from '../game/deal'
 import { TellDefinition, assignBotTells } from '../game/tells'
 import { decideBotMove, isRoundOver, findLeaderAfterWin, getNextActivePlayer } from '../game/bot'
@@ -51,6 +56,9 @@ export interface GameStore {
   // hint penalty
   hintPenaltyMs: number
 
+  // play history (most recent first, capped at 3)
+  playLog: LogEntry[]
+
   // actions
   initGame: () => void
   startGame: () => void
@@ -91,6 +99,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   tellObservations: [[], [], []],
   confirmedTells: [new Set(), new Set(), new Set()],
   hintPenaltyMs: 0,
+  playLog: [],
 
   initGame: () => {
     const puzzleDate = getPuzzleDate()
@@ -135,6 +144,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         lastPlayedBy: startingPlayer,
         passedThisRound: [],
         finishOrder: [],
+        playLog: [],
       })
       return
     }
@@ -165,6 +175,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         playerMoveCount: 0,
         playerFinishPosition: null,
         hintPenaltyMs: 0,
+        playLog: [],
       })
       return
     }
@@ -194,6 +205,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       ],
       confirmedTells: [new Set(), new Set(), new Set()],
       hintPenaltyMs: 0,
+      playLog: [],
     })
   },
 
@@ -271,6 +283,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
       })
     }
 
+    const playLog: LogEntry[] = [{ seat, move }, ...state.playLog].slice(0, 3)
+
     set({
       hands: newHands,
       currentTrick: move,
@@ -281,6 +295,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       finishOrder,
       playerEndTime,
       playerFinishPosition,
+      playLog,
     })
 
     const activeRemaining = newHands.filter(h => h.length > 0).length
@@ -300,7 +315,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   _applyPass: (seat) => {
     const state = get()
     const newPassed = [...state.passedThisRound, seat]
-    set({ passedThisRound: newPassed })
+    const playLog: LogEntry[] = [{ seat, move: null }, ...state.playLog].slice(0, 3)
+    set({ passedThisRound: newPassed, playLog })
 
     if (isRoundOver(state.lastPlayedBy, state.hands, newPassed)) {
       const newLeader = findLeaderAfterWin(state.lastPlayedBy, state.hands)

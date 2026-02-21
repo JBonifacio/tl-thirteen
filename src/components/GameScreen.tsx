@@ -6,6 +6,7 @@ import { Timer } from './Timer'
 import { TellHUD } from './TellHUD'
 import { ResultsModal } from './ResultsModal'
 import { getTellPool } from '../game/tells'
+import { RecentPlays } from './RecentPlays'
 
 export function GameScreen() {
   const {
@@ -17,6 +18,7 @@ export function GameScreen() {
     startTime,
     playerEndTime,
     phase,
+    playLog,
     botTells,
     confirmedTells,
     puzzleNumber,
@@ -84,6 +86,9 @@ export function GameScreen() {
               lastPlayedBy={lastPlayedBy}
             />
           </div>
+
+          {/* Recent plays */}
+          <RecentPlays log={playLog} />
 
           {/* Player hand */}
           <div className="bg-green-900/60 rounded-xl border border-green-800 p-4">

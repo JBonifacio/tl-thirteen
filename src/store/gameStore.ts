@@ -6,11 +6,10 @@ export interface LogEntry {
   seat: number
   move: Move | null // null = pass
 }
-import { getDailyDeal, Hand } from '../game/deal'
+import { getDailyDeal, Hand, makeRng, seededShuffle } from '../game/deal'
 import { TellDefinition, assignBotTells } from '../game/tells'
 import { decideBotMove, isRoundOver, findLeaderAfterWin, getNextActivePlayer } from '../game/bot'
 import { getPuzzleDate, getPuzzleNumber, isPuzzleExpired } from '../game/puzzle'
-import { seededShuffle } from '../game/deal'
 import {
   markStarted,
   hasStarted,

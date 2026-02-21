@@ -1,0 +1,16 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # TLS certificates (provision via Certbot separately)
+      - ./certs:/etc/nginx/certs:ro
+    environment:
+      - NGINX_ENVSUBST_TEMPLATE_SUFFIX=.conf
+
+  # Run once to obtain/renew TLS certs:
+  #   docker run --rm -v $(pwd)/certs:/etc/letsencrypt certbot/certbot certonly \
+  #     --standalone -d yourdomain.com

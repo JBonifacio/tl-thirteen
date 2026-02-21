@@ -2,15 +2,16 @@ services:
   app:
     build: .
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      # TLS certificates (provision via Certbot separately)
-      - ./certs:/etc/nginx/certs:ro
-    environment:
-      - NGINX_ENVSUBST_TEMPLATE_SUFFIX=.conf
+    # Ports exposed only internally - cloudflared handles external access
+    expose:
+      - "80"
 
-  # Run once to obtain/renew TLS certs:
-  #   docker run --rm -v $(pwd)/certs:/etc/letsencrypt certbot/certbot certonly \
-  #     --standalone -d yourdomain.com
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --config /etc/cloudflared/config.yml run
+    volumes:
+      - ./cloudflare-tunnel.yml:/etc/cloudflared/config.yml:ro
+      - ./cloudflared-credentials.json:/etc/cloudflared/credentials.json:ro
+    depends_on:
+      - app

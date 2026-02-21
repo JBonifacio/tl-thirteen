@@ -60,34 +60,29 @@ Puzzles are only valid for 24 hours from their date. Expired dates show an error
 
 ---
 
-## Deployment (Mac Mini)
+## Deployment
+
+This project is deployed using **Cloudflare Tunnels**, which provides secure access without port forwarding or TLS certificate management.
 
 ### First-time setup
 
-1. Install Docker Desktop on the Mac Mini (or Docker Engine via Homebrew).
+See [CLOUDFLARE_TUNNEL_SETUP.md](./CLOUDFLARE_TUNNEL_SETUP.md) for complete deployment instructions.
 
-2. Point your domain at the Mac Mini's public IP, and open ports 80 and 443 in your router.
+**Quick start:**
 
-3. Obtain TLS certificates:
+1. Create configuration from template:
+   ```bash
+   cp cloudflare-tunnel.yml.template cloudflare-tunnel.yml
+   ```
 
-```bash
-mkdir -p certs
+2. Follow the setup guide to obtain your tunnel credentials and configure your domain.
 
-docker run --rm \
-  -p 80:80 \
-  -v $(pwd)/certs:/etc/letsencrypt \
-  certbot/certbot certonly \
-  --standalone \
-  -d yourdomain.com \
-  --email you@example.com \
-  --agree-tos
-```
+3. Deploy:
+   ```bash
+   docker compose up -d --build
+   ```
 
-4. Update `nginx.conf` to add an HTTPS server block (see note below), then start:
-
-```bash
-docker compose up -d --build
-```
+**Note:** `cloudflare-tunnel.yml` and `cloudflared-credentials.json` are in `.gitignore` to prevent committing sensitive data.
 
 ### Deploy updates
 
@@ -97,59 +92,6 @@ docker compose up -d --build
 ```
 
 The old container keeps serving traffic while the new image builds. Nginx restarts in under a second.
-
-### Certificate renewal
-
-Renew certs before they expire (Let's Encrypt certs last 90 days). Add a cron job on the Mac Mini:
-
-```cron
-0 3 * * 1  cd /path/to/tl-thirteen && \
-  docker run --rm \
-    -v $(pwd)/certs:/etc/letsencrypt \
-    certbot/certbot renew --quiet && \
-  docker compose restart app
-```
-
-### Adding HTTPS to nginx.conf
-
-After obtaining certs, add a second server block to `nginx.conf`:
-
-```nginx
-server {
-    listen 443 ssl;
-    server_name yourdomain.com;
-
-    ssl_certificate     /etc/nginx/certs/live/yourdomain.com/fullchain.pem;
-    ssl_certificate_key /etc/nginx/certs/live/yourdomain.com/privkey.pem;
-
-    root /usr/share/nginx/html;
-    index index.html;
-
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    location ~* \.(js|css|png|svg|ico|woff2?)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-
-    location = /index.html {
-        add_header Cache-Control "no-store";
-    }
-
-    gzip on;
-    gzip_types text/plain text/css application/javascript application/json image/svg+xml;
-    gzip_min_length 256;
-}
-
-# Redirect HTTP → HTTPS
-server {
-    listen 80;
-    server_name yourdomain.com;
-    return 301 https://$host$request_uri;
-}
-```
 
 ---
 

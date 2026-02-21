@@ -12,7 +12,6 @@ import { decideBotMove, isRoundOver, findLeaderAfterWin, getNextActivePlayer } f
 import { getPuzzleDate, getPuzzleNumber, isPuzzleExpired } from '../game/puzzle'
 import {
   markStarted,
-  hasStarted,
   saveResult,
   loadResult,
   resolveTells,
@@ -20,7 +19,7 @@ import {
 
 const BOT_DELAY_MS = 900
 
-export type GamePhase = 'begin' | 'playing' | 'finished' | 'already_played'
+export type GamePhase = 'begin' | 'playing' | 'finished'
 
 export interface GameStore {
   // meta
@@ -59,6 +58,9 @@ export interface GameStore {
   // revealed cards per bot (Set of card IDs visible to the player)
   botRevealedCardIds: [Set<string>, Set<string>, Set<string>]
 
+  // marked cards per bot (Set of card IDs identifiable by back markings)
+  botMarkedCardIds: [Set<string>, Set<string>, Set<string>]
+
   // play history (most recent first, capped at 3)
   playLog: LogEntry[]
 
@@ -92,11 +94,27 @@ function computeRevealedCards(
   }) as [Set<string>, Set<string>, Set<string>]
 }
 
+function computeMarkedCards(
+  botTells: [TellDefinition[], TellDefinition[], TellDefinition[]],
+  hands: [Hand, Hand, Hand, Hand],
+  puzzleDate: string,
+): [Set<string>, Set<string>, Set<string>] {
+  return botTells.map((tells, bi) => {
+    if (!tells.some(t => t.id === 'MARKED_CARDS')) return new Set<string>()
+    const hand = hands[bi + 1]
+    const rng = makeRng(puzzleDate, `mark-${bi}`)
+    const count = 1 + Math.floor(rng() * 3) // 1–3 cards marked
+    const shuffled = seededShuffle([...hand], rng)
+    return new Set(shuffled.slice(0, count).map(c => c.id))
+  }) as [Set<string>, Set<string>, Set<string>]
+}
+
 function preConfirmRevealTells(
   botTells: [TellDefinition[], TellDefinition[], TellDefinition[]],
 ): [Set<string>, Set<string>, Set<string>] {
+  const VISUAL_TELLS = new Set(['REVEALED_CARDS', 'MARKED_CARDS'])
   return botTells.map(tells =>
-    new Set(tells.filter(t => t.id === 'REVEALED_CARDS').map(t => t.id)),
+    new Set(tells.filter(t => VISUAL_TELLS.has(t.id)).map(t => t.id)),
   ) as [Set<string>, Set<string>, Set<string>]
 }
 
@@ -126,6 +144,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   confirmedTells: [new Set(), new Set(), new Set()],
   hintPenaltyMs: 0,
   botRevealedCardIds: [new Set(), new Set(), new Set()],
+  botMarkedCardIds: [new Set(), new Set(), new Set()],
   playLog: [],
 
   initGame: () => {
@@ -135,7 +154,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     // Always compute the deal + tells (needed whether we restore or play fresh)
     const { hands, startingPlayer } = getDailyDeal(puzzleDate)
-    const botTells = assignBotTells(puzzleDate)
+    const botTells = assignBotTells(puzzleDate, hands)
 
     // ── Check for a completed session from today ────────────────────────────
     const stored = loadResult(puzzleDate)
@@ -173,44 +192,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
         finishOrder: [],
         playLog: [],
         botRevealedCardIds: [new Set(), new Set(), new Set()],
+        botMarkedCardIds: [new Set(), new Set(), new Set()],
       })
       return
     }
 
-    // ── Started but not finished — block a second attempt ─────────────────
-    if (hasStarted(puzzleDate)) {
-      set({
-        puzzleDate,
-        puzzleNumber,
-        isExpired,
-        phase: 'already_played',
-        hands,
-        botTells,
-        tellObservations: [
-          new Array(botTells[0].length).fill(0),
-          new Array(botTells[1].length).fill(0),
-          new Array(botTells[2].length).fill(0),
-        ],
-        confirmedTells: preConfirmRevealTells(botTells),
-        currentPlayer: startingPlayer,
-        currentTrick: null,
-        roundLeader: startingPlayer,
-        lastPlayedBy: startingPlayer,
-        passedThisRound: [],
-        finishOrder: [],
-        startTime: null,
-        playerEndTime: null,
-        playerMoveCount: 0,
-        playerFinishPosition: null,
-        hintPenaltyMs: 0,
-        playLog: [],
-        botRevealedCardIds: computeRevealedCards(botTells, hands, puzzleDate),
-      })
-      return
-    }
-
-    // ── Fresh game ────────────────────────────────────────────────────────
+    // ── Fresh game (or interrupted session — always allow replay) ────────
     const botRevealedCardIds = computeRevealedCards(botTells, hands, puzzleDate)
+    const botMarkedCardIds = computeMarkedCards(botTells, hands, puzzleDate)
     set({
       puzzleDate,
       puzzleNumber,
@@ -237,6 +226,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       hintPenaltyMs: 0,
       playLog: [],
       botRevealedCardIds,
+      botMarkedCardIds,
     })
   },
 
@@ -333,7 +323,24 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (activeRemaining <= 1 || (seat === 0 && justFinished)) {
       if (activeRemaining <= 1) {
         const missing = [0, 1, 2, 3].filter(i => !finishOrder.includes(i))
-        set({ finishOrder: [...finishOrder, ...missing], phase: 'finished' })
+        const newFinishOrder = [...finishOrder, ...missing]
+
+        // If the player is being auto-placed (finished last without playing their
+        // final card themselves, i.e. all remaining players ran out), record their result.
+        if (missing.includes(0) && playerEndTime === null) {
+          playerEndTime = now
+          playerFinishPosition = newFinishOrder.indexOf(0) + 1
+          saveResult(state.puzzleDate, {
+            playerFinishPosition,
+            elapsedMs: playerEndTime - startTime,
+            playerMoveCount,
+            hintPenaltyMs: state.hintPenaltyMs,
+            botTellIds: state.botTells.map(tells => tells.map(t => t.id)) as [string[], string[], string[]],
+            confirmedTellIds: state.confirmedTells.map(s => [...s]) as [string[], string[], string[]],
+          })
+        }
+
+        set({ finishOrder: newFinishOrder, phase: 'finished', playerEndTime, playerFinishPosition })
         return
       }
       set({ phase: 'finished' })

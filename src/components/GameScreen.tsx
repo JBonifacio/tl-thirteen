@@ -21,6 +21,7 @@ export function GameScreen() {
     playLog,
     botTells,
     botRevealedCardIds,
+    botMarkedCardIds,
     confirmedTells,
     puzzleNumber,
     puzzleDate,
@@ -69,6 +70,7 @@ export function GameScreen() {
                   seat={seat}
                   hand={hand}
                   revealedCardIds={botRevealedCardIds[bi]}
+                  markedCardIds={botMarkedCardIds[bi]}
                   isActive={currentPlayer === seat && phase === 'playing'}
                   isFinished={hand.length === 0}
                   finishPosition={finishPos}

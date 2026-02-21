@@ -1,7 +1,7 @@
 const EPOCH = '2026-02-20'
 
 export function getTodayString(): string {
-  return new Date().toISOString().slice(0, 10)
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Los_Angeles' }).format(new Date())
 }
 
 export function getPuzzleDate(): string {

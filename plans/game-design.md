@@ -202,8 +202,7 @@ Skipping is rare in practice — the probability of a dragon in any single hand 
 
 ### Bot AI (Opponents)
 
-Bots are rule-based engines constrained by **tells** — behavioral quirks assigned deterministically
-from the daily seed. Each bot gets 2- tells from a pool of 6; Bots can share tells.
+Bots are rule-based engines constrained by **tells** — behavioral quirks assigned deterministically from the daily seed. Each bot gets 2-4 tells each - see the tell pool; Bots can share tells.
 
 Players will be told which tells are used for the daily game during play and how many there are.
 

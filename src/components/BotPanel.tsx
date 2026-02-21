@@ -1,4 +1,4 @@
-import { Card } from '../game/cards'
+import { Card, compareCards } from '../game/cards'
 import { CardComponent } from './CardComponent'
 import { TellDefinition } from '../game/tells'
 
@@ -11,6 +11,7 @@ interface Props {
   finishPosition: number | null
   tells: TellDefinition[]
   confirmedTells: Set<string>
+  markedCardIds: Set<string>
   onRevealHint: () => void
   hintAvailable: boolean
 }
@@ -21,6 +22,7 @@ export function BotPanel({
   seat,
   hand,
   revealedCardIds,
+  markedCardIds,
   isActive,
   isFinished,
   finishPosition,
@@ -30,11 +32,14 @@ export function BotPanel({
   hintAvailable,
 }: Props) {
   const name = BOT_NAMES[seat - 1]
-  const confirmed = tells.filter(t => confirmedTells.has(t.id))
   const medals = ['\uD83E\uDD47', '\uD83E\uDD48', '\uD83E\uDD49', '']
 
   const revealedCards = hand.filter(c => revealedCardIds.has(c.id))
-  const blindCount = hand.length - revealedCards.length
+  // Remaining cards in sorted rank order; marked ones shown face-up in-position
+  const nonRevealedCards = hand
+    .filter(c => !revealedCardIds.has(c.id))
+    .sort((a, b) => compareCards(a, b))
+  const markedVisibleCount = nonRevealedCards.filter(c => markedCardIds.has(c.id)).length
 
   return (
     <div
@@ -52,17 +57,21 @@ export function BotPanel({
         )}
       </div>
 
-      {/* Card row: revealed face-up first, then blind face-down */}
+      {/* Card row: revealed face-up first, then remaining in sorted rank order */}
       <div className="flex gap-0.5 flex-wrap items-end">
         {revealedCards.map(card => (
           <CardComponent key={card.id} card={card} small />
         ))}
-        {revealedCards.length > 0 && blindCount > 0 && (
+        {revealedCards.length > 0 && nonRevealedCards.length > 0 && (
           <div className="w-px h-8 bg-green-600 mx-0.5 self-center" />
         )}
-        {Array.from({ length: blindCount }).map((_, i) => (
-          <CardComponent key={`blind-${i}`} card={{ rank: '3', suit: '\u2660', id: '' }} faceDown small />
-        ))}
+        {nonRevealedCards.map((card, i) =>
+          markedCardIds.has(card.id) ? (
+            <CardComponent key={card.id} card={card} small />
+          ) : (
+            <CardComponent key={`blind-${i}`} card={{ rank: '3', suit: '\u2660', id: '' }} faceDown small />
+          ),
+        )}
         {hand.length === 0 && <span className="text-gray-400 text-xs italic">No cards</span>}
       </div>
 
@@ -71,17 +80,28 @@ export function BotPanel({
         {revealedCards.length > 0 && (
           <span className="text-amber-400 ml-1">· {revealedCards.length} shown</span>
         )}
+        {markedVisibleCount > 0 && (
+          <span className="text-purple-400 ml-1">· {markedVisibleCount} marked</span>
+        )}
       </div>
 
-      {/* Confirmed tells */}
-      {confirmed.length > 0 && (
+      {/* Tells — always shown; unconfirmed appear as hidden slots */}
+      {tells.length > 0 && (
         <div className="border-t border-green-700 pt-2 space-y-1">
-          {confirmed.map(t => (
-            <div key={t.id} className="flex items-start gap-1">
-              <span className="text-yellow-400 text-xs mt-0.5">✓</span>
-              <span className="text-yellow-200 text-xs">{t.label}</span>
-            </div>
-          ))}
+          {tells.map((t, i) => {
+            const isConfirmed = confirmedTells.has(t.id)
+            return isConfirmed ? (
+              <div key={t.id} className="flex items-start gap-1">
+                <span className="text-yellow-400 text-xs mt-0.5">✓</span>
+                <span className="text-yellow-200 text-xs">{t.label}</span>
+              </div>
+            ) : (
+              <div key={i} className="flex items-start gap-1">
+                <span className="text-gray-600 text-xs mt-0.5">?</span>
+                <span className="text-gray-600 text-xs italic">Hidden tell</span>
+              </div>
+            )
+          })}
         </div>
       )}
 

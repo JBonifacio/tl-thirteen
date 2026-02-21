@@ -22,7 +22,7 @@ function hashString(s: string): number {
   return h >>> 0
 }
 
-function seededShuffle<T>(arr: T[], rng: () => number): T[] {
+export function seededShuffle<T>(arr: T[], rng: () => number): T[] {
   const result = [...arr]
   for (let i = result.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1))

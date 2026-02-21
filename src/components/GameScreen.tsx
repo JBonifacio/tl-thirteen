@@ -20,6 +20,7 @@ export function GameScreen() {
     phase,
     playLog,
     botTells,
+    botRevealedCardIds,
     confirmedTells,
     puzzleNumber,
     puzzleDate,
@@ -66,7 +67,8 @@ export function GameScreen() {
                 <BotPanel
                   key={seat}
                   seat={seat}
-                  cardCount={hand.length}
+                  hand={hand}
+                  revealedCardIds={botRevealedCardIds[bi]}
                   isActive={currentPlayer === seat && phase === 'playing'}
                   isFinished={hand.length === 0}
                   finishPosition={finishPos}

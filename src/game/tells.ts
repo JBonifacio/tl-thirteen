@@ -164,6 +164,15 @@ export const TELL_REGISTRY: TellDefinition[] = [
       return [...candidates, ...highSingles]
     },
   },
+  {
+    id: 'REVEALED_CARDS',
+    category: 'sequencing',
+    label: 'Accidentally revealed cards',
+    description: 'Some of this bot\'s cards are visible to you.',
+    priority: 99,
+    confirmThreshold: 0, // always confirmed — the cards are right there
+    filter: (candidates) => candidates, // no behavioural constraint, purely visual
+  },
 ]
 
 // ── Application ───────────────────────────────────────────────────────────────

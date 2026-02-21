@@ -10,6 +10,7 @@ import { getDailyDeal, Hand } from '../game/deal'
 import { TellDefinition, assignBotTells } from '../game/tells'
 import { decideBotMove, isRoundOver, findLeaderAfterWin, getNextActivePlayer } from '../game/bot'
 import { getPuzzleDate, getPuzzleNumber, isPuzzleExpired } from '../game/puzzle'
+import { seededShuffle } from '../game/deal'
 import {
   markStarted,
   hasStarted,
@@ -56,6 +57,9 @@ export interface GameStore {
   // hint penalty
   hintPenaltyMs: number
 
+  // revealed cards per bot (Set of card IDs visible to the player)
+  botRevealedCardIds: [Set<string>, Set<string>, Set<string>]
+
   // play history (most recent first, capped at 3)
   playLog: LogEntry[]
 
@@ -72,6 +76,29 @@ export interface GameStore {
   _applyPlay: (seat: number, move: Move) => void
   _applyPass: (seat: number) => void
   _advanceAfterAction: (seat: number) => void
+}
+
+function computeRevealedCards(
+  botTells: [TellDefinition[], TellDefinition[], TellDefinition[]],
+  hands: [Hand, Hand, Hand, Hand],
+  puzzleDate: string,
+): [Set<string>, Set<string>, Set<string>] {
+  return botTells.map((tells, bi) => {
+    if (!tells.some(t => t.id === 'REVEALED_CARDS')) return new Set<string>()
+    const hand = hands[bi + 1]
+    const rng = makeRng(puzzleDate, `reveal-${bi}`)
+    const count = 1 + Math.floor(rng() * 6) // 1–6 cards revealed
+    const shuffled = seededShuffle([...hand], rng)
+    return new Set(shuffled.slice(0, count).map(c => c.id))
+  }) as [Set<string>, Set<string>, Set<string>]
+}
+
+function preConfirmRevealTells(
+  botTells: [TellDefinition[], TellDefinition[], TellDefinition[]],
+): [Set<string>, Set<string>, Set<string>] {
+  return botTells.map(tells =>
+    new Set(tells.filter(t => t.id === 'REVEALED_CARDS').map(t => t.id)),
+  ) as [Set<string>, Set<string>, Set<string>]
 }
 
 function removeCards(hand: Hand, played: Card[]): Hand {
@@ -99,6 +126,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   tellObservations: [[], [], []],
   confirmedTells: [new Set(), new Set(), new Set()],
   hintPenaltyMs: 0,
+  botRevealedCardIds: [new Set(), new Set(), new Set()],
   playLog: [],
 
   initGame: () => {
@@ -145,6 +173,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         passedThisRound: [],
         finishOrder: [],
         playLog: [],
+        botRevealedCardIds: [new Set(), new Set(), new Set()],
       })
       return
     }
@@ -163,7 +192,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
           new Array(botTells[1].length).fill(0),
           new Array(botTells[2].length).fill(0),
         ],
-        confirmedTells: [new Set(), new Set(), new Set()],
+        confirmedTells: preConfirmRevealTells(botTells),
         currentPlayer: startingPlayer,
         currentTrick: null,
         roundLeader: startingPlayer,
@@ -176,11 +205,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
         playerFinishPosition: null,
         hintPenaltyMs: 0,
         playLog: [],
+        botRevealedCardIds: computeRevealedCards(botTells, hands, puzzleDate),
       })
       return
     }
 
     // ── Fresh game ────────────────────────────────────────────────────────
+    const botRevealedCardIds = computeRevealedCards(botTells, hands, puzzleDate)
     set({
       puzzleDate,
       puzzleNumber,
@@ -203,9 +234,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
         new Array(botTells[1].length).fill(0),
         new Array(botTells[2].length).fill(0),
       ],
-      confirmedTells: [new Set(), new Set(), new Set()],
+      confirmedTells: preConfirmRevealTells(botTells),
       hintPenaltyMs: 0,
       playLog: [],
+      botRevealedCardIds,
     })
   },
 

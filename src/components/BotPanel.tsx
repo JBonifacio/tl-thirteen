@@ -1,9 +1,11 @@
+import { Card } from '../game/cards'
 import { CardComponent } from './CardComponent'
 import { TellDefinition } from '../game/tells'
 
 interface Props {
   seat: number // 1-3
-  cardCount: number
+  hand: Card[]
+  revealedCardIds: Set<string>
   isActive: boolean
   isFinished: boolean
   finishPosition: number | null
@@ -17,7 +19,8 @@ const BOT_NAMES = ['Lan', 'Minh', 'Tuấn']
 
 export function BotPanel({
   seat,
-  cardCount,
+  hand,
+  revealedCardIds,
   isActive,
   isFinished,
   finishPosition,
@@ -30,10 +33,13 @@ export function BotPanel({
   const confirmed = tells.filter(t => confirmedTells.has(t.id))
   const medals = ['\uD83E\uDD47', '\uD83E\uDD48', '\uD83E\uDD49', '']
 
+  const revealedCards = hand.filter(c => revealedCardIds.has(c.id))
+  const blindCount = hand.length - revealedCards.length
+
   return (
     <div
       className={`
-        rounded-xl p-3 flex flex-col gap-2 min-w-[140px]
+        rounded-xl p-3 flex flex-col gap-2 min-w-[160px]
         ${isActive ? 'ring-2 ring-yellow-400 bg-green-800' : 'bg-green-900'}
         transition-all duration-300
       `}
@@ -46,15 +52,26 @@ export function BotPanel({
         )}
       </div>
 
-      {/* Face-down cards */}
-      <div className="flex gap-0.5 flex-wrap">
-        {Array.from({ length: Math.min(cardCount, 13) }).map((_, i) => (
-          <CardComponent key={i} card={{ rank: '3', suit: '♠', id: '' }} faceDown small />
+      {/* Card row: revealed face-up first, then blind face-down */}
+      <div className="flex gap-0.5 flex-wrap items-end">
+        {revealedCards.map(card => (
+          <CardComponent key={card.id} card={card} small />
         ))}
-        {cardCount === 0 && <span className="text-gray-400 text-xs italic">No cards</span>}
+        {revealedCards.length > 0 && blindCount > 0 && (
+          <div className="w-px h-8 bg-green-600 mx-0.5 self-center" />
+        )}
+        {Array.from({ length: blindCount }).map((_, i) => (
+          <CardComponent key={`blind-${i}`} card={{ rank: '3', suit: '\u2660', id: '' }} faceDown small />
+        ))}
+        {hand.length === 0 && <span className="text-gray-400 text-xs italic">No cards</span>}
       </div>
 
-      <div className="text-gray-400 text-xs">{cardCount} card{cardCount !== 1 ? 's' : ''}</div>
+      <div className="text-gray-400 text-xs">
+        {hand.length} card{hand.length !== 1 ? 's' : ''}
+        {revealedCards.length > 0 && (
+          <span className="text-amber-400 ml-1">· {revealedCards.length} shown</span>
+        )}
+      </div>
 
       {/* Confirmed tells */}
       {confirmed.length > 0 && (

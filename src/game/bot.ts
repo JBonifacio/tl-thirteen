@@ -75,8 +75,8 @@ export function buildShareText(
   return [
     `Tien Len Daily #${puzzleNumber} \uD83C\uDCCF`,
     `Finished: ${posLabel} ${medal}`,
-    `Time: ${timeStr}${penaltyStr}`,
     `Moves: ${moveCount}`,
+    `Time: ${timeStr}${penaltyStr}`,
     url,
   ].join('\n')
 }

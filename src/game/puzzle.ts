@@ -6,7 +6,9 @@ export function getTodayString(): string {
 
 export function getPuzzleDate(): string {
   const params = new URLSearchParams(window.location.search)
-  return params.get('d') ?? getTodayString()
+  const raw = params.get('d')
+  const valid = raw && /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : null
+  return valid ?? getTodayString()
 }
 
 export function getPuzzleNumber(dateString: string): number {

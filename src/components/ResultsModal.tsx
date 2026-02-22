@@ -63,8 +63,8 @@ export function ResultsModal() {
 
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
-          <Stat label="Time" value={formatTime(elapsedMs)} />
           <Stat label="Moves" value={String(playerMoveCount)} />
+          <Stat label="Time" value={formatTime(elapsedMs)} />
           {hintPenaltyMs > 0 && (
             <Stat
               label="Hint penalty"

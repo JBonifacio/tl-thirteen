@@ -47,8 +47,8 @@ export function BeginScreen() {
 
         {/* Scoring */}
         <div className="text-xs text-gray-400 text-center">
-          Finish <strong className="text-gray-200">1st</strong> as fast as possible.
-          Position beats time — 1st in 5 min beats 2nd in 30 sec.
+          Finish <strong className="text-gray-200">1st</strong> in as few moves as possible.
+          Position first, then moves (including passes), then time — 1st in 10 moves beats 2nd in 5.
         </div>
 
         {/* Play button */}

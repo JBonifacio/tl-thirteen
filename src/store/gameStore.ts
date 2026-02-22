@@ -353,8 +353,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
   _applyPass: (seat) => {
     const state = get()
     const newPassed = [...state.passedThisRound, seat]
+    const playerMoveCount = seat === 0 ? state.playerMoveCount + 1 : state.playerMoveCount
     const playLog: LogEntry[] = [{ seat, move: null }, ...state.playLog].slice(0, 3)
-    set({ passedThisRound: newPassed, playLog })
+    set({ passedThisRound: newPassed, playerMoveCount, playLog })
 
     if (isRoundOver(state.lastPlayedBy, state.hands, newPassed)) {
       const newLeader = findLeaderAfterWin(state.lastPlayedBy, state.hands)

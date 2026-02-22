@@ -84,10 +84,18 @@ export function beatsMove(challenger: Move, current: Move): boolean {
   return cardValue(highCard(challenger.cards)) > cardValue(highCard(current.cards))
 }
 
+export function isBomb(type: MoveType): boolean {
+  return type === 'four_of_a_kind' || type === 'sequence_of_pairs'
+}
+
 export function isValidPlay(cards: Card[], currentTrick: Move | null): MoveType | null {
   const type = classifyMove(cards)
   if (!type) return null
-  if (!currentTrick) return type // leading — any valid combo
+  if (!currentTrick) {
+    // Bombs can only be played against a single 2, never as a lead
+    if (isBomb(type)) return null
+    return type
+  }
   const move: Move = { type, cards }
   if (!beatsMove(move, currentTrick)) return null
   return type
@@ -242,14 +250,13 @@ function getSequenceOfPairs(hand: Card[], pairCount: number | null, currentTrick
 
 export function generateAllValidMoves(hand: Card[], currentTrick: Move | null): Move[] {
   if (!currentTrick) {
-    // Leading: all valid combos
+    // Leading: bombs (four_of_a_kind, sequence_of_pairs) are excluded —
+    // they can only be played in response to a single 2.
     return [
       ...getSingles(hand, null),
       ...getPairs(hand, null),
       ...getTriples(hand, null),
-      ...getFourOfAKind(hand, null),
       ...getSequences(hand, null, null),
-      ...getSequenceOfPairs(hand, null, null),
     ]
   }
 

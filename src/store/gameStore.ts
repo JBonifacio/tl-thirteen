@@ -242,6 +242,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   playerPlay: (cards) => {
     const state = get()
     if (state.currentPlayer !== 0 || state.phase !== 'playing') return
+    // Opening play must include the 3♠
+    if (state.playLog.length === 0 && !cards.some(c => c.id === '3\u2660')) return
     const type = isValidPlay(cards, state.currentTrick)
     if (!type) return
     get()._applyPlay(0, { type, cards })
@@ -399,7 +401,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const hand = state.hands[seat]
     const tells = state.botTells[botOffset]
 
-    const { chosen, triggeredIds } = decideBotMove(hand, tells, { currentTrick: state.currentTrick })
+    const isOpeningPlay = state.playLog.length === 0
+    const { chosen, triggeredIds } = decideBotMove(hand, tells, {
+      currentTrick: state.currentTrick,
+      mustIncludeCardId: isOpeningPlay ? '3\u2660' : undefined,
+    })
 
     const newObservations = state.tellObservations.map((obs, bi) => {
       if (bi !== botOffset) return obs

@@ -8,6 +8,8 @@ export type TellCategory = 'preservation' | 'aggression' | 'sequencing' | 'endga
 
 export interface TurnContext {
   currentTrick: Move | null
+  /** When set, only moves that include a card with this ID are legal (e.g. 3♠ on opening play). */
+  mustIncludeCardId?: string
 }
 
 export type MoveFilter = (
@@ -195,13 +197,12 @@ export const TELL_REGISTRY: TellDefinition[] = [
 // ── Default Strategy ──────────────────────────────────────────────────────────
 
 // When leading, prefer shedding combinations over singles. Lower number = higher priority.
+// Bombs (four_of_a_kind, sequence_of_pairs) are never candidates when leading.
 const LEAD_PRIORITY: Record<string, number> = {
-  sequence_of_pairs: 1,
-  sequence: 2,
-  triple: 3,
-  pair: 4,
-  single: 5,
-  four_of_a_kind: 6, // hoard bombs; only lead one if nothing else remains
+  sequence: 1,
+  triple: 2,
+  pair: 3,
+  single: 4,
 }
 
 function moveHighCard(move: Move): Card {
@@ -321,10 +322,17 @@ export function applyTells(
   context: TurnContext,
 ): ApplyResult {
   const allValid = generateAllValidMoves(hand, context.currentTrick)
+
+  // Opening play: restrict to moves that include the required card (e.g. 3♠)
+  const mustId = context.mustIncludeCardId
+  const constrained = mustId
+    ? allValid.filter(m => m.cards.some(c => c.id === mustId))
+    : allValid
+
   const sorted = [...tells].sort((a, b) => a.priority - b.priority)
 
   const triggeredIds: string[] = []
-  let candidates = [...allValid]
+  let candidates = [...constrained]
 
   for (const tell of sorted) {
     const before = candidates.map(m => m.cards.map(c => c.id).join(','))

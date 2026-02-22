@@ -272,37 +272,3 @@ Contents:
 
 The begin screen reappears if the player refreshes before completing the game. Once the game is
 finished, navigating back shows the results modal instead.
-
----
-
-## Milestones
-
-### Phase 1 — Playable MVP
-- [ ] Card model, deck, deal logic
-- [ ] Tien Len rule engine (valid move validation)
-- [ ] Single-player UI (play vs 3 simple bots)
-- [ ] Timer + finish detection
-- [ ] Seeded daily deal
-
-### Phase 2 — Results & Sharing
-- [ ] Results modal (finish position, time, move count)
-- [ ] Share button — clipboard copy of result text + puzzle URL
-
-### Phase 3 — Polish
-- [ ] Card animations
-- [ ] Hint system (optional — penalizes time or adds offset)
-- [ ] Mobile-responsive layout
-- [ ] Puzzle availability window — a puzzle URL is only playable for 24 hours from its date; requests outside that window show an expired screen
-
-### Phase 4 — Growth
-- [ ] Streaks and personal stats
-- [ ] Leaderboards
-- [ ] Social media integration (share results to Twitter, etc.)
-
----
-
-## Open Questions
-
-- **Bot strength**: Should bots scale with day-of-week (harder on weekends)?
-- **Hint penalty**: If hints are allowed, how much time (or position) is added as penalty?
-- **Variants**: Support Southern (standard) vs Northern rules (different bomb rules)?

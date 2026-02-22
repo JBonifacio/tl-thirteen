@@ -5,6 +5,19 @@ services:
     # Ports exposed only internally - cloudflared handles external access
     expose:
       - "80"
+    depends_on:
+      - api
+
+  api:
+    build: ./server
+    restart: unless-stopped
+    expose:
+      - "3001"
+    volumes:
+      - leaderboard-data:/data
+    environment:
+      - DB_PATH=/data/leaderboard.db
+      - PORT=3001
 
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -15,3 +28,6 @@ services:
       - ./cloudflared-credentials.json:/etc/cloudflared/credentials.json:ro
     depends_on:
       - app
+
+volumes:
+  leaderboard-data:

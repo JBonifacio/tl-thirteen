@@ -100,37 +100,79 @@ Alternatively, you can create the DNS record manually in the Cloudflare dashboar
 ### Deploy with Docker Compose
 
 ```bash
-# Build and start services
-docker compose up -d
+# Build and start all services (app, api, cloudflared)
+docker compose up -d --build
 
 # View logs
 docker compose logs -f
+
+# View logs for a specific service
+docker compose logs -f api
 
 # Stop services
 docker compose down
 ```
 
+The `api` service stores its SQLite database in a named Docker volume (`leaderboard-data`). This volume persists across container restarts and rebuilds.
+
 ### Verify Deployment
 
-1. Check that both services are running:
+1. Check that all three services are running:
    ```bash
    docker compose ps
    ```
 
-2. Check cloudflared logs:
+2. Verify the API is responding:
+   ```bash
+   docker compose exec app curl http://api:3001/api/scores/2026-01-01
+   ```
+
+3. Check cloudflared logs:
    ```bash
    docker compose logs cloudflared
    ```
 
-3. Visit your domain in a browser to verify the application is accessible.
+4. Visit your domain in a browser to verify the application is accessible.
+
+## Leaderboard API
+
+The `api` service is a Node/Express server backed by SQLite that powers the daily leaderboard. Nginx proxies `/api/*` requests to this service.
+
+### Database maintenance
+
+Purge old scores to keep the database small:
+
+```bash
+# Delete scores older than 30 days
+docker compose exec api npx tsx scripts/purge.ts --days 30
+
+# Delete all scores
+docker compose exec api npx tsx scripts/purge.ts --all
+```
+
+### Database volume
+
+The leaderboard database lives in the `leaderboard-data` Docker volume at `/data/leaderboard.db` inside the container.
+
+```bash
+# Inspect the volume
+docker volume inspect tl-thirteen_leaderboard-data
+
+# Back up the database
+docker compose exec api cp /data/leaderboard.db /data/leaderboard.db.bak
+docker compose cp api:/data/leaderboard.db.bak ./leaderboard-backup.db
+```
+
+**Warning:** `docker compose down -v` will delete the volume and all leaderboard data.
 
 ## File Structure
 
 - `cloudflare-tunnel.yml` - Tunnel configuration (ingress rules, hostname routing)
 - `cloudflared-credentials.json` - Tunnel credentials (DO NOT COMMIT)
-- `docker-compose.yml` - Updated to include cloudflared service
-- `Dockerfile` - Builds the application
-- `nginx.conf` - Nginx configuration for serving the SPA
+- `docker-compose.yml` - Defines app, api, and cloudflared services
+- `Dockerfile` - Builds the frontend application (nginx)
+- `server/Dockerfile` - Builds the leaderboard API service
+- `nginx.conf` - Nginx configuration (SPA routing + `/api/` proxy)
 
 ## Security Considerations
 
@@ -146,6 +188,22 @@ docker compose down
 - **DDoS protection:** Built-in Cloudflare protection
 - **Easy deployment:** No firewall configuration needed
 - **Zero trust security:** Can integrate with Cloudflare Access
+
+## Local Development
+
+To run the leaderboard API locally alongside the Vite dev server:
+
+```bash
+# Terminal 1: Start the API server
+cd server
+npm install
+npm run dev          # runs on port 3001
+
+# Terminal 2: Start the frontend dev server
+npm run dev          # Vite proxies /api requests to localhost:3001
+```
+
+The Vite dev server is configured to proxy `/api` requests to `http://localhost:3001`.
 
 ## Troubleshooting
 
@@ -176,6 +234,23 @@ docker compose down
    ```
 
 3. Verify ingress rules in `cloudflare-tunnel.yml` match your domain
+
+### Leaderboard API not working
+
+1. Check that the API container is running:
+   ```bash
+   docker compose logs api
+   ```
+
+2. Verify nginx can reach the API:
+   ```bash
+   docker compose exec app curl -s http://api:3001/api/scores/2026-01-01
+   ```
+
+3. Verify the database volume is mounted:
+   ```bash
+   docker compose exec api ls -la /data/
+   ```
 
 ### Managing Tunnels
 

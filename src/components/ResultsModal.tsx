@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { buildShareText } from '../game/bot'
 import { formatTime, positionLabel, positionMedal } from '../game/puzzle'
+import { LeaderboardModal } from './LeaderboardModal'
 
 export function ResultsModal() {
   const {
@@ -17,6 +18,8 @@ export function ResultsModal() {
   } = useGameStore()
 
   const [copied, setCopied] = useState(false)
+  const [showLeaderboard, setShowLeaderboard] = useState(false)
+  const [showBotReveals, setShowBotReveals] = useState(false)
   const [timeUntilMidnight, setTimeUntilMidnight] = useState(() => getMsUntilPacificMidnight())
 
   useEffect(() => {
@@ -74,30 +77,6 @@ export function ResultsModal() {
           )}
         </div>
 
-        {/* Bot tell reveal */}
-        <div className="bg-green-950 rounded-xl p-3 text-xs space-y-3">
-          <p className="text-gray-400 font-semibold uppercase tracking-wide text-[10px]">
-            Bot reveals
-          </p>
-          {botTells.map((tells, bi) => (
-            <div key={bi}>
-              <span className="text-gray-300 font-semibold">{BOT_NAMES[bi]}</span>
-              <div className="mt-1 space-y-1 pl-2">
-                {tells.map(t => (
-                  <div key={t.id} className="flex items-center gap-1.5">
-                    {confirmedTells[bi].has(t.id) ? (
-                      <span className="text-green-400">✓</span>
-                    ) : (
-                      <span className="text-gray-600">·</span>
-                    )}
-                    <span className="text-yellow-200">{t.label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-
         {/* Next puzzle countdown */}
         <div className="text-center bg-green-950 rounded-xl p-3">
           <p className="text-gray-300 text-sm font-semibold">Come back tomorrow for a new game!</p>
@@ -115,7 +94,67 @@ export function ResultsModal() {
           {copied ? '✓ Copied!' : '📋 Copy Result'}
         </button>
 
+        {/* Secondary actions */}
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            onClick={() => setShowBotReveals(true)}
+            className="py-3 bg-green-700 hover:bg-green-600 text-white font-bold rounded-xl transition-colors text-sm"
+          >
+            Bot Reveals
+          </button>
+          <button
+            onClick={() => setShowLeaderboard(true)}
+            className="py-3 bg-green-700 hover:bg-green-600 text-white font-bold rounded-xl transition-colors text-sm"
+          >
+            Leaderboard
+          </button>
+        </div>
+
       </div>
+
+      {showBotReveals && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
+          <div className="max-w-sm w-full bg-green-900 rounded-2xl shadow-2xl p-6 flex flex-col gap-4">
+            <h2 className="text-xl font-bold text-white text-center">Bot Reveals</h2>
+            <div className="space-y-3 text-xs">
+              {botTells.map((tells, bi) => (
+                <div key={bi}>
+                  <span className="text-gray-300 font-semibold">{BOT_NAMES[bi]}</span>
+                  <div className="mt-1 space-y-1 pl-2">
+                    {tells.map(t => (
+                      <div key={t.id} className="flex items-center gap-1.5">
+                        {confirmedTells[bi].has(t.id) ? (
+                          <span className="text-green-400">✓</span>
+                        ) : (
+                          <span className="text-gray-600">·</span>
+                        )}
+                        <span className="text-yellow-200">{t.label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={() => setShowBotReveals(false)}
+              className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showLeaderboard && (
+        <LeaderboardModal
+          puzzleDate={puzzleDate}
+          position={position}
+          moves={playerMoveCount}
+          elapsedMs={elapsedMs}
+          hintPenaltyMs={hintPenaltyMs}
+          onClose={() => setShowLeaderboard(false)}
+        />
+      )}
     </div>
   )
 }

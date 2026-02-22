@@ -14,8 +14,9 @@ export interface StoredSession {
 
 // ── Keys ──────────────────────────────────────────────────────────────────────
 
-const resultKey  = (date: string) => `tl_result_${date}`
-const startedKey = (date: string) => `tl_started_${date}`
+const resultKey    = (date: string) => `tl_result_${date}`
+const startedKey   = (date: string) => `tl_started_${date}`
+const submittedKey = (date: string) => `tl_submitted_${date}`
 
 // ── Public API ────────────────────────────────────────────────────────────────
 
@@ -39,6 +40,16 @@ export function loadResult(date: string): StoredSession | null {
   } catch {
     return null
   }
+}
+
+// ── Leaderboard submission tracking ──────────────────────────────────────────
+
+export function markSubmitted(date: string): void {
+  localStorage.setItem(submittedKey(date), 'true')
+}
+
+export function hasSubmitted(date: string): boolean {
+  return localStorage.getItem(submittedKey(date)) === 'true'
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

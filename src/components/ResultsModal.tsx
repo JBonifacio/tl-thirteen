@@ -15,6 +15,7 @@ export function ResultsModal() {
     hintPenaltyMs,
     botTells,
     confirmedTells,
+    retryGame,
   } = useGameStore()
 
   const [copied, setCopied] = useState(false)
@@ -109,6 +110,14 @@ export function ResultsModal() {
             Leaderboard
           </button>
         </div>
+
+        {/* Play Again */}
+        <button
+          onClick={retryGame}
+          className="w-full py-3 bg-green-700 hover:bg-green-600 text-white font-bold rounded-xl transition-colors"
+        >
+          Play Again
+        </button>
 
       </div>
 

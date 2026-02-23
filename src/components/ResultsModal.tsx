@@ -16,6 +16,7 @@ export function ResultsModal() {
     botTells,
     confirmedTells,
     retryGame,
+    isRetry,
   } = useGameStore()
 
   const [copied, setCopied] = useState(false)
@@ -104,8 +105,9 @@ export function ResultsModal() {
             Bot Reveals
           </button>
           <button
-            onClick={() => setShowLeaderboard(true)}
-            className="py-3 bg-green-700 hover:bg-green-600 text-white font-bold rounded-xl transition-colors text-sm"
+            onClick={() => !isRetry && setShowLeaderboard(true)}
+            disabled={isRetry}
+            className="py-3 bg-green-700 hover:bg-green-600 text-white font-bold rounded-xl transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Leaderboard
           </button>

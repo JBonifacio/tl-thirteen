@@ -64,12 +64,16 @@ export interface GameStore {
   // play history (most recent first, capped at 3)
   playLog: LogEntry[]
 
+  // retry
+  isRetry: boolean
+
   // actions
   initGame: () => void
   startGame: () => void
   playerPlay: (cards: Card[]) => void
   playerPass: () => void
   revealHint: (botOffset: number) => void
+  retryGame: () => void
 
   // internal
   _executeBotTurn: (seat: number) => void
@@ -127,6 +131,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   puzzleDate: '',
   puzzleNumber: 1,
   isExpired: false,
+  isRetry: false,
   phase: 'begin',
   hands: [[], [], [], []],
   currentPlayer: 0,
@@ -170,6 +175,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         puzzleDate,
         puzzleNumber,
         isExpired,
+        isRetry: false,
         phase: 'finished',
         hands: [[], [], [], []],
         botTells: restoredTells,
@@ -204,6 +210,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       puzzleDate,
       puzzleNumber,
       isExpired,
+      isRetry: false,
       phase: 'begin',
       hands,
       currentPlayer: startingPlayer,
@@ -275,6 +282,43 @@ export const useGameStore = create<GameStore>((set, get) => ({
     })
   },
 
+  retryGame: () => {
+    const { puzzleDate, puzzleNumber, isExpired } = get()
+    const { hands, startingPlayer } = getDailyDeal(puzzleDate)
+    const botTells = assignBotTells(puzzleDate, hands)
+    const botRevealedCardIds = computeRevealedCards(botTells, hands, puzzleDate)
+    const botMarkedCardIds = computeMarkedCards(botTells, hands, puzzleDate)
+    set({
+      isRetry: true,
+      puzzleDate,
+      puzzleNumber,
+      isExpired,
+      phase: 'begin',
+      hands,
+      currentPlayer: startingPlayer,
+      currentTrick: null,
+      roundLeader: startingPlayer,
+      lastPlayedBy: startingPlayer,
+      passedThisRound: [],
+      finishOrder: [],
+      startTime: null,
+      playerEndTime: null,
+      playerMoveCount: 0,
+      playerFinishPosition: null,
+      botTells,
+      tellObservations: [
+        new Array(botTells[0].length).fill(0),
+        new Array(botTells[1].length).fill(0),
+        new Array(botTells[2].length).fill(0),
+      ],
+      confirmedTells: preConfirmRevealTells(botTells),
+      hintPenaltyMs: 0,
+      playLog: [],
+      botRevealedCardIds,
+      botMarkedCardIds,
+    })
+  },
+
   _applyPlay: (seat, move) => {
     const state = get()
     const newHands = state.hands.map((h, i) =>
@@ -295,15 +339,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
       playerEndTime = now
       playerFinishPosition = finishOrder.indexOf(0) + 1
 
-      // Persist result to localStorage
-      saveResult(state.puzzleDate, {
-        playerFinishPosition,
-        elapsedMs: playerEndTime - startTime,
-        playerMoveCount,
-        hintPenaltyMs: state.hintPenaltyMs,
-        botTellIds: state.botTells.map(tells => tells.map(t => t.id)) as [string[], string[], string[]],
-        confirmedTellIds: state.confirmedTells.map(s => [...s]) as [string[], string[], string[]],
-      })
+      // SCORE-01: only persist first-attempt score
+      if (!state.isRetry) {
+        saveResult(state.puzzleDate, {
+          playerFinishPosition,
+          elapsedMs: playerEndTime - startTime,
+          playerMoveCount,
+          hintPenaltyMs: state.hintPenaltyMs,
+          botTellIds: state.botTells.map(tells => tells.map(t => t.id)) as [string[], string[], string[]],
+          confirmedTellIds: state.confirmedTells.map(s => [...s]) as [string[], string[], string[]],
+        })
+      }
     }
 
     const playLog: LogEntry[] = [{ seat, move }, ...state.playLog].slice(0, 3)
@@ -332,14 +378,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
         if (missing.includes(0) && playerEndTime === null) {
           playerEndTime = now
           playerFinishPosition = newFinishOrder.indexOf(0) + 1
-          saveResult(state.puzzleDate, {
-            playerFinishPosition,
-            elapsedMs: playerEndTime - startTime,
-            playerMoveCount,
-            hintPenaltyMs: state.hintPenaltyMs,
-            botTellIds: state.botTells.map(tells => tells.map(t => t.id)) as [string[], string[], string[]],
-            confirmedTellIds: state.confirmedTells.map(s => [...s]) as [string[], string[], string[]],
-          })
+          // SCORE-01: only persist first-attempt score
+          if (!state.isRetry) {
+            saveResult(state.puzzleDate, {
+              playerFinishPosition,
+              elapsedMs: playerEndTime - startTime,
+              playerMoveCount,
+              hintPenaltyMs: state.hintPenaltyMs,
+              botTellIds: state.botTells.map(tells => tells.map(t => t.id)) as [string[], string[], string[]],
+              confirmedTellIds: state.confirmedTells.map(s => [...s]) as [string[], string[], string[]],
+            })
+          }
         }
 
         set({ finishOrder: newFinishOrder, phase: 'finished', playerEndTime, playerFinishPosition })

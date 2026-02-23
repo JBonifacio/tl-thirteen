@@ -4,6 +4,11 @@ dist/
 *.local
 .DS_Store
 
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal
+
 # Cloudflare Tunnel credentials and config
 cloudflared-credentials.json
 cloudflare-tunnel.yml

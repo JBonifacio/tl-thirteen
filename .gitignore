@@ -12,3 +12,4 @@ dist/
 # Cloudflare Tunnel credentials and config
 cloudflared-credentials.json
 cloudflare-tunnel.yml
+.planning/

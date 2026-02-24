@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { buildShareText } from '../game/bot'
 import { formatTime, positionLabel, positionMedal } from '../game/puzzle'
+import { getRetryCount } from '../game/session'
 import { LeaderboardModal } from './LeaderboardModal'
 
 export function ResultsModal() {
@@ -18,6 +19,8 @@ export function ResultsModal() {
     retryGame,
     isRetry,
   } = useGameStore()
+
+  const retryCount = isRetry ? getRetryCount(puzzleDate) : 0
 
   const [copied, setCopied] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
@@ -63,7 +66,11 @@ export function ResultsModal() {
           <h2 className="text-2xl font-bold text-white">
             Finished {label}!
           </h2>
-          <p className="text-green-400 text-sm mt-1">Tien Len Daily #{puzzleNumber}</p>
+          {isRetry ? (
+            <p className="text-green-400 text-sm mt-1">Retry #{retryCount}</p>
+          ) : (
+            <p className="text-green-400 text-sm mt-1">Tien Len Daily #{puzzleNumber}</p>
+          )}
         </div>
 
         {/* Stats */}
@@ -80,37 +87,42 @@ export function ResultsModal() {
         </div>
 
         {/* Next puzzle countdown */}
-        <div className="text-center bg-green-950 rounded-xl p-3">
-          <p className="text-gray-300 text-sm font-semibold">Come back tomorrow for a new game!</p>
-          <p className="text-green-400 text-2xl font-mono font-bold mt-1 tabular-nums">
-            {formatCountdown(timeUntilMidnight)}
-          </p>
-          <p className="text-gray-500 text-[10px] mt-0.5">New puzzle at midnight PT</p>
-        </div>
+        {!isRetry && (
+          <div className="text-center bg-green-950 rounded-xl p-3">
+            <p className="text-gray-300 text-sm font-semibold">Come back tomorrow for a new game!</p>
+            <p className="text-green-400 text-2xl font-mono font-bold mt-1 tabular-nums">
+              {formatCountdown(timeUntilMidnight)}
+            </p>
+            <p className="text-gray-500 text-[10px] mt-0.5">New puzzle at midnight PT</p>
+          </div>
+        )}
 
         {/* Share */}
-        <button
-          onClick={handleShare}
-          className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-colors"
-        >
-          {copied ? '✓ Copied!' : '📋 Copy Result'}
-        </button>
+        {!isRetry && (
+          <button
+            onClick={handleShare}
+            className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-colors"
+          >
+            {copied ? '✓ Copied!' : '📋 Copy Result'}
+          </button>
+        )}
 
         {/* Secondary actions */}
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => setShowBotReveals(true)}
-            className="py-3 bg-green-700 hover:bg-green-600 text-white font-bold rounded-xl transition-colors text-sm"
+            className={`py-3 bg-green-700 hover:bg-green-600 text-white font-bold rounded-xl transition-colors text-sm${isRetry ? ' col-span-2' : ''}`}
           >
             Bot Reveals
           </button>
-          <button
-            onClick={() => !isRetry && setShowLeaderboard(true)}
-            disabled={isRetry}
-            className="py-3 bg-green-700 hover:bg-green-600 text-white font-bold rounded-xl transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Leaderboard
-          </button>
+          {!isRetry && (
+            <button
+              onClick={() => setShowLeaderboard(true)}
+              className="py-3 bg-green-700 hover:bg-green-600 text-white font-bold rounded-xl transition-colors text-sm"
+            >
+              Leaderboard
+            </button>
+          )}
         </div>
 
         {/* Play Again */}

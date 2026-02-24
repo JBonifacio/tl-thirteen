@@ -52,6 +52,22 @@ export function hasSubmitted(date: string): boolean {
   return localStorage.getItem(submittedKey(date)) === 'true'
 }
 
+// ── Retry count tracking ──────────────────────────────────────────────────────
+
+const retryCountKey = (date: string) => `tl_retrycount_${date}`
+
+export function incrementRetryCount(date: string): void {
+  const current = getRetryCount(date)
+  localStorage.setItem(retryCountKey(date), String(current + 1))
+}
+
+export function getRetryCount(date: string): number {
+  const raw = localStorage.getItem(retryCountKey(date))
+  if (!raw) return 0
+  const n = parseInt(raw, 10)
+  return isNaN(n) ? 0 : n
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /** Resolve stored tell IDs back to full TellDefinition objects. */

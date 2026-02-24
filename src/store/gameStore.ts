@@ -15,6 +15,7 @@ import {
   saveResult,
   loadResult,
   resolveTells,
+  incrementRetryCount,
 } from '../game/session'
 
 const BOT_DELAY_MS = 900
@@ -284,6 +285,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   retryGame: () => {
     const { puzzleDate, puzzleNumber, isExpired } = get()
+    incrementRetryCount(puzzleDate)
     const { hands, startingPlayer } = getDailyDeal(puzzleDate)
     const botTells = assignBotTells(puzzleDate, hands)
     const botRevealedCardIds = computeRevealedCards(botTells, hands, puzzleDate)

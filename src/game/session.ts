@@ -1,6 +1,25 @@
 import { TellDefinition, TELL_REGISTRY } from './tells'
+import { Card } from './cards'
 
 // ── Shape stored in localStorage ──────────────────────────────────────────────
+
+export type ReplayAction = 'play' | 'pass' | 'skipped' | 'finished'
+
+export interface ReplayTurn {
+  seat: number
+  action: ReplayAction
+  cards: Card[]         // full { rank, suit, id } objects; [] for pass/skipped/finished
+  position?: number     // 1-based finish position; only present when action === 'finished'
+}
+
+export interface ReplayRound {
+  turns: ReplayTurn[]
+}
+
+export interface ReplayData {
+  date: string          // 'YYYY-MM-DD'
+  rounds: ReplayRound[]
+}
 
 export interface StoredSession {
   playerFinishPosition: number
@@ -66,6 +85,24 @@ export function getRetryCount(date: string): number {
   if (!raw) return 0
   const n = parseInt(raw, 10)
   return isNaN(n) ? 0 : n
+}
+
+// ── Replay persistence ────────────────────────────────────────────────────────
+
+const replayKey = (date: string) => `tl_replay_${date}`
+
+export function saveReplay(date: string, replay: ReplayData): void {
+  localStorage.setItem(replayKey(date), JSON.stringify(replay))
+}
+
+export function loadReplay(date: string): ReplayData | null {
+  const raw = localStorage.getItem(replayKey(date))
+  if (!raw) return null
+  try {
+    return JSON.parse(raw) as ReplayData
+  } catch {
+    return null
+  }
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

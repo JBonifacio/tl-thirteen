@@ -16,6 +16,9 @@ import {
   loadResult,
   resolveTells,
   incrementRetryCount,
+  saveReplay,
+  ReplayRound,
+  ReplayTurn,
 } from '../game/session'
 
 const BOT_DELAY_MS = 900
@@ -126,6 +129,27 @@ function preConfirmRevealTells(
 function removeCards(hand: Hand, played: Card[]): Hand {
   const ids = new Set(played.map(c => c.id))
   return hand.filter(c => !ids.has(c.id))
+}
+
+// ── Replay buffer (module-level, not reactive) ────────────────────────────────
+let replayBuffer: ReplayRound[] = []
+let currentRoundTurns: ReplayTurn[] = []
+
+function flushRound(): void {
+  if (currentRoundTurns.length > 0) {
+    replayBuffer.push({ turns: currentRoundTurns })
+    currentRoundTurns = []
+  }
+}
+
+function resetReplayBuffer(): void {
+  replayBuffer = []
+  currentRoundTurns = []
+}
+
+function finalizeReplay(date: string): void {
+  flushRound()
+  saveReplay(date, { date, rounds: replayBuffer })
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -240,6 +264,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   startGame: () => {
     markStarted(get().puzzleDate)
+    resetReplayBuffer()
     set({ phase: 'playing' })
     const { currentPlayer } = get()
     if (currentPlayer !== 0) {
@@ -290,6 +315,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const botTells = assignBotTells(puzzleDate, hands)
     const botRevealedCardIds = computeRevealedCards(botTells, hands, puzzleDate)
     const botMarkedCardIds = computeMarkedCards(botTells, hands, puzzleDate)
+    resetReplayBuffer()
     set({
       isRetry: true,
       puzzleDate,
@@ -333,6 +359,15 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     const justFinished = newHands[seat].length === 0
     const finishOrder = justFinished ? [...state.finishOrder, seat] : [...state.finishOrder]
+
+    // Record play and finished turns (first-attempt games only)
+    if (!state.isRetry) {
+      currentRoundTurns.push({ seat, action: 'play', cards: move.cards })
+      if (justFinished) {
+        const position = finishOrder.indexOf(seat) + 1
+        currentRoundTurns.push({ seat, action: 'finished', cards: [], position })
+      }
+    }
 
     let playerEndTime = state.playerEndTime
     let playerFinishPosition = state.playerFinishPosition
@@ -393,9 +428,11 @@ export const useGameStore = create<GameStore>((set, get) => ({
           }
         }
 
+        if (!state.isRetry) finalizeReplay(state.puzzleDate)
         set({ finishOrder: newFinishOrder, phase: 'finished', playerEndTime, playerFinishPosition })
         return
       }
+      if (!state.isRetry) finalizeReplay(state.puzzleDate)
       set({ phase: 'finished' })
       return
     }
@@ -408,10 +445,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const newPassed = [...state.passedThisRound, seat]
     const playerMoveCount = seat === 0 ? state.playerMoveCount + 1 : state.playerMoveCount
     const playLog: LogEntry[] = [{ seat, move: null }, ...state.playLog].slice(0, 3)
+
+    if (!state.isRetry) {
+      currentRoundTurns.push({ seat, action: 'pass', cards: [] })
+    }
+
     set({ passedThisRound: newPassed, playerMoveCount, playLog })
 
     if (isRoundOver(state.lastPlayedBy, state.hands, newPassed)) {
       const newLeader = findLeaderAfterWin(state.lastPlayedBy, state.hands)
+      if (!state.isRetry) flushRound()
       set({ currentTrick: null, roundLeader: newLeader, passedThisRound: [], currentPlayer: newLeader })
       if (newLeader !== 0) get()._scheduleBotTurn(newLeader)
       return
@@ -425,10 +468,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const next = getNextActivePlayer(seat, state.hands, state.passedThisRound)
 
     if (next === -1) {
+      if (!state.isRetry) flushRound()
       const newLeader = findLeaderAfterWin(state.lastPlayedBy, state.hands)
       set({ currentTrick: null, roundLeader: newLeader, passedThisRound: [], currentPlayer: newLeader })
       if (newLeader !== 0) get()._scheduleBotTurn(newLeader)
       return
+    }
+
+    if (!state.isRetry) {
+      const totalSeats = 4
+      let checking = (seat + 1) % totalSeats
+      while (checking !== next) {
+        if (state.passedThisRound.includes(checking) && state.hands[checking].length > 0) {
+          currentRoundTurns.push({ seat: checking, action: 'skipped', cards: [] })
+        }
+        checking = (checking + 1) % totalSeats
+      }
     }
 
     set({ currentPlayer: next })

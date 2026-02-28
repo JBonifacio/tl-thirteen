@@ -4,6 +4,7 @@ import { buildShareText } from '../game/bot'
 import { formatTime, positionLabel, positionMedal } from '../game/puzzle'
 import { getRetryCount } from '../game/session'
 import { LeaderboardModal } from './LeaderboardModal'
+import { ReplayModal } from './ReplayModal'
 
 export function ResultsModal() {
   const {
@@ -24,6 +25,7 @@ export function ResultsModal() {
 
   const [copied, setCopied] = useState(false)
   const [showLeaderboard, setShowLeaderboard] = useState(false)
+  const [showReplay, setShowReplay] = useState(false)
   const [showBotReveals, setShowBotReveals] = useState(false)
   const [timeUntilMidnight, setTimeUntilMidnight] = useState(() => getMsUntilPacificMidnight())
 
@@ -107,6 +109,16 @@ export function ResultsModal() {
           </button>
         )}
 
+        {/* View Replay — first-attempt only */}
+        {!isRetry && (
+          <button
+            onClick={() => setShowReplay(true)}
+            className="w-full py-3 border border-green-600 text-green-300 hover:bg-green-800 font-bold rounded-xl transition-colors text-sm"
+          >
+            View Replay
+          </button>
+        )}
+
         {/* Secondary actions */}
         <div className="grid grid-cols-2 gap-3">
           <button
@@ -166,6 +178,10 @@ export function ResultsModal() {
             </button>
           </div>
         </div>
+      )}
+
+      {showReplay && (
+        <ReplayModal puzzleDate={puzzleDate} onClose={() => setShowReplay(false)} />
       )}
 
       {showLeaderboard && (

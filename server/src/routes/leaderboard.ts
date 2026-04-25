@@ -25,6 +25,7 @@ const CONSECUTIVE_SPACES_RE = /  /
 interface ScoreBody {
   puzzleDate: string
   nickname: string
+  userToken: string
   position: number
   moves: number
   elapsedMs: number
@@ -37,6 +38,7 @@ interface ScoreRow {
   moves: number
   elapsed_ms: number
   hint_penalty_ms: number
+  user_token?: string
 }
 
 function getLeaderboard(puzzleDate: string) {
@@ -93,6 +95,24 @@ router.post('/scores', (req: Request, res: Response) => {
       return
     }
 
+    // Validate userToken
+    const userToken = typeof body.userToken === 'string' ? body.userToken.trim() : ''
+    if (!userToken || userToken.length < 20) {
+      res.status(400).json({ error: 'Invalid user token' })
+      return
+    }
+
+    // Check for existing nickname/date to verify ownership
+    const existing = db.prepare(`
+      SELECT user_token FROM scores 
+      WHERE puzzle_date = ? AND nickname = ? COLLATE NOCASE
+    `).get(body.puzzleDate, nickname) as { user_token: string } | undefined
+
+    if (existing && existing.user_token !== userToken) {
+      res.status(403).json({ error: 'Nickname already taken for today' })
+      return
+    }
+
     // Validate numeric fields
     const position = Number(body.position)
     const moves = Number(body.moves)
@@ -107,8 +127,9 @@ router.post('/scores', (req: Request, res: Response) => {
       res.status(400).json({ error: 'moves must be > 0' })
       return
     }
-    if (!Number.isInteger(elapsedMs) || elapsedMs < 0) {
-      res.status(400).json({ error: 'elapsedMs must be >= 0' })
+    // Sanity check: finishing a game in < 2 seconds is likely cheating
+    if (!Number.isInteger(elapsedMs) || elapsedMs < 2000) {
+      res.status(400).json({ error: 'invalid game duration' })
       return
     }
     if (!Number.isInteger(hintPenaltyMs) || hintPenaltyMs < 0) {
@@ -118,15 +139,15 @@ router.post('/scores', (req: Request, res: Response) => {
 
     // Insert or replace
     db.prepare(`
-      INSERT INTO scores (puzzle_date, nickname, position, moves, elapsed_ms, hint_penalty_ms)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO scores (puzzle_date, nickname, user_token, position, moves, elapsed_ms, hint_penalty_ms)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(puzzle_date, nickname COLLATE NOCASE) DO UPDATE SET
         position = excluded.position,
         moves = excluded.moves,
         elapsed_ms = excluded.elapsed_ms,
         hint_penalty_ms = excluded.hint_penalty_ms,
         created_at = datetime('now')
-    `).run(body.puzzleDate, nickname, position, moves, elapsedMs, hintPenaltyMs)
+    `).run(body.puzzleDate, nickname, userToken, position, moves, elapsedMs, hintPenaltyMs)
 
     res.json(buildResponse(body.puzzleDate, nickname))
   } catch (err) {

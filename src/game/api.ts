@@ -14,6 +14,7 @@ export interface LeaderboardResponse {
 export interface SubmitScoreParams {
   puzzleDate: string
   nickname: string
+  userToken: string
   position: number
   moves: number
   elapsedMs: number

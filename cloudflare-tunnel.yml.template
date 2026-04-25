@@ -4,7 +4,7 @@ credentials-file: /etc/cloudflared/credentials.json
 ingress:
   # Route all traffic to the nginx service
   - hostname: your-domain.example.com
-    service: http://app:80
+    service: http://app:8080
 
   # Catch-all rule (required)
   - service: http_status:404

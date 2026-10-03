@@ -101,6 +101,15 @@ export function isValidPlay(cards: Card[], currentTrick: Move | null): MoveType 
   return type
 }
 
+/**
+ * A player who passed is out until the round ends — except that when the play
+ * on the table is a single 2, they may come back in with a bomb.
+ */
+export function canBombBackIn(hand: Card[], currentTrick: Move | null): boolean {
+  if (!currentTrick || currentTrick.type !== 'single' || currentTrick.cards[0].rank !== '2') return false
+  return generateAllValidMoves(hand, currentTrick).some(m => isBomb(m.type))
+}
+
 // ── generation (for bot AI) ───────────────────────────────────────────────────
 
 function getSingles(hand: Card[], currentTrick: Move | null): Move[] {

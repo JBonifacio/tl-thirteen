@@ -34,6 +34,7 @@ When comparing same-rank cards the suit is the tiebreaker (e.g. 3♥ beats 3♦)
 - Active player must beat the current highest play with the **same type and same count** (except bombs).
 - Any player may pass; play continues until all others pass, then the last player to play leads a new round.
 - Note that if a player has passed, they cannot re-enter the current round until the next round starts with a new lead. They can only play again after the current round ends and a new one begins.
+  - **Exception — bombing back in:** if the play on the table is a single 2, a player who passed earlier may come back in with a bomb (four-of-a-kind or 3+ consecutive pairs). Each passed player gets one chance per 2 played; passing again keeps them out. Playing the bomb puts them back in the round.
 - Players are required to play the same play type as the current highest play (e.g. if the current play is a pair, you must also play a higher pair to beat it), except when using bombs against a single 2.
 - A player with no valid move **must** pass.  But passing allowed if you have a valid move as well. 
 - **Bombs** (four-of-a-kind, or 3+ consecutive pairs) can beat a single 2.

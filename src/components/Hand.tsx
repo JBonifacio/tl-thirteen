@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Card, compareCards } from '../game/cards'
-import { Move, isValidPlay } from '../game/moves'
+import { Move, isValidPlay, isBomb } from '../game/moves'
 import { PlayingCard } from './PlayingCard'
 
 interface Props {
@@ -9,16 +9,17 @@ interface Props {
   currentTrick: Move | null
   onPlay: (cards: Card[]) => void
   onPass: () => void
+  bombsOnly?: boolean // player passed this round: only a bomb (on a single 2) brings them back
 }
 
-export function Hand({ hand, isActive, currentTrick, onPlay, onPass }: Props) {
+export function Hand({ hand, isActive, currentTrick, onPlay, onPass, bombsOnly = false }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
 
   const sorted = [...hand].sort(compareCards)
   const selectedCards = sorted.filter(c => selected.has(c.id))
 
   const playType = selectedCards.length > 0 ? isValidPlay(selectedCards, currentTrick) : null
-  const canPlay = !!playType
+  const canPlay = !!playType && (!bombsOnly || isBomb(playType))
   const canPass = isActive && !!currentTrick
 
   function toggleCard(card: Card) {

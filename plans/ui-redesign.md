@@ -22,6 +22,7 @@ Phases 1–8 change no game rules, bot logic, scoring, leaderboard or replay dat
 | Opponent info | No card counts. A fan of card backs, with revealed cards face up on the left and marked cards face up in place | Closer to glancing across a real table |
 | Confetti | Pure CSS keyframes, no library. Skipped when reduced motion is on | No new dependency |
 | Desktop | Only the Game screen gets its own desktop layout (from 1024px). Other screens are a centered 420px column, and Leaderboard and Replay open as centered pop-up windows | Those screens are single-column anyway |
+| Passing rule (fixed in Phase 2) | A pass lasts until the round ends. Exception: on a single 2, a player who passed may bomb back in (once per 2 played). | The code was clearing passes on every play (`gameStore.ts`), which contradicted `game-design.md`. The user confirmed the rule, with bombs beating a single 2 only. |
 
 ## Design tokens
 

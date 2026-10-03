@@ -28,6 +28,7 @@ export function GameScreen() {
     playerPlay,
     playerPass,
     revealHint,
+    passedThisRound,
   } = useGameStore()
 
   const tellPool = getTellPool(botTells)
@@ -111,6 +112,7 @@ export function GameScreen() {
               currentTrick={currentTrick}
               onPlay={playerPlay}
               onPass={playerPass}
+              bombsOnly={passedThisRound.includes(0)}
             />
           </div>
 

@@ -1,5 +1,5 @@
 import { Card } from './cards'
-import { Move } from './moves'
+import { Move, canBombBackIn } from './moves'
 import { TellDefinition, TurnContext, applyTells, ApplyResult } from './tells'
 
 export function decideBotMove(
@@ -10,14 +10,34 @@ export function decideBotMove(
   return applyTells(tells, hand, context)
 }
 
+/**
+ * Whether a seat sits out the current play. Passing locks a player out for the
+ * rest of the round, unless a single 2 is on the table and they hold a bomb —
+ * then they get one chance per trick to bomb back in (declinedThisTrick records
+ * who has already had, and passed on, that chance).
+ */
+function isOutOfPlay(
+  seat: number,
+  hands: Card[][],
+  passedThisRound: number[],
+  currentTrick: Move | null,
+  declinedThisTrick: number[],
+): boolean {
+  if (hands[seat].length === 0) return true
+  if (!passedThisRound.includes(seat)) return false
+  return declinedThisTrick.includes(seat) || !canBombBackIn(hands[seat], currentTrick)
+}
+
 export function getNextActivePlayer(
   from: number,
   hands: Card[][],
   passedThisRound: number[],
+  currentTrick: Move | null,
+  declinedThisTrick: number[],
 ): number {
   for (let offset = 1; offset <= 4; offset++) {
     const candidate = (from + offset) % 4
-    if (hands[candidate].length > 0 && !passedThisRound.includes(candidate)) {
+    if (!isOutOfPlay(candidate, hands, passedThisRound, currentTrick, declinedThisTrick)) {
       return candidate
     }
   }
@@ -28,9 +48,11 @@ export function isRoundOver(
   lastPlayedBy: number,
   hands: Card[][],
   passedThisRound: number[],
+  currentTrick: Move | null,
+  declinedThisTrick: number[],
 ): boolean {
   return [0, 1, 2, 3].every(
-    i => hands[i].length === 0 || i === lastPlayedBy || passedThisRound.includes(i),
+    i => i === lastPlayedBy || isOutOfPlay(i, hands, passedThisRound, currentTrick, declinedThisTrick),
   )
 }
 

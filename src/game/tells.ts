@@ -1,5 +1,5 @@
 import { Card, RANK_INDEX, compareCards } from './cards'
-import { Move, generateAllValidMoves } from './moves'
+import { Move, generateAllValidMoves, isBomb } from './moves'
 import { makeRng, Hand } from './deal'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -10,6 +10,8 @@ export interface TurnContext {
   currentTrick: Move | null
   /** When set, only moves that include a card with this ID are legal (e.g. 3♠ on opening play). */
   mustIncludeCardId?: string
+  /** When true, only bombs are legal — a player who passed coming back in on a single 2. */
+  bombsOnly?: boolean
 }
 
 export type MoveFilter = (
@@ -325,9 +327,10 @@ export function applyTells(
 
   // Opening play: restrict to moves that include the required card (e.g. 3♠)
   const mustId = context.mustIncludeCardId
-  const constrained = mustId
+  const opening = mustId
     ? allValid.filter(m => m.cards.some(c => c.id === mustId))
     : allValid
+  const constrained = context.bombsOnly ? opening.filter(m => isBomb(m.type)) : opening
 
   const sorted = [...tells].sort((a, b) => a.priority - b.priority)
 
@@ -343,6 +346,9 @@ export function applyTells(
     }
     candidates = after
   }
+
+  // Tells may re-admit moves from allValid; re-apply the bombs-only restriction
+  if (context.bombsOnly) candidates = candidates.filter(m => isBomb(m.type))
 
   if (candidates.length === 0) return { chosen: null, triggeredIds }
 

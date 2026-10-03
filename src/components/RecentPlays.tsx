@@ -1,11 +1,10 @@
 import { LogEntry } from '../store/gameStore'
+import { SEAT_NAMES } from '../game/players'
 import { isRedSuit } from '../game/cards'
 
 interface Props {
   log: LogEntry[]
 }
-
-const SEAT_NAMES = ['You', 'Lan', 'Minh', 'Tuấn']
 
 export function RecentPlays({ log }: Props) {
   if (log.length === 0) return null

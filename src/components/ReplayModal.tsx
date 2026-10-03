@@ -1,7 +1,6 @@
 import { useState } from 'react'
+import { SEAT_NAMES } from '../game/players'
 import { loadReplay, ReplayData } from '../game/session'
-
-const SEAT_NAMES = ['You', 'Lan', 'Minh', 'Tuấn']
 
 interface Props {
   puzzleDate: string

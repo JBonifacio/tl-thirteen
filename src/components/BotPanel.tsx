@@ -1,5 +1,6 @@
 import { Card, compareCards } from '../game/cards'
-import { CardComponent } from './CardComponent'
+import { BOT_NAMES } from '../game/players'
+import { PlayingCard } from './PlayingCard'
 import { TellDefinition } from '../game/tells'
 
 interface Props {
@@ -15,8 +16,6 @@ interface Props {
   onRevealHint: () => void
   hintAvailable: boolean
 }
-
-const BOT_NAMES = ['Lan', 'Minh', 'Tuấn']
 
 export function BotPanel({
   seat,
@@ -60,16 +59,16 @@ export function BotPanel({
       {/* Card row: revealed face-up first, then remaining in sorted rank order */}
       <div className="flex gap-0.5 flex-wrap items-end">
         {revealedCards.map(card => (
-          <CardComponent key={card.id} card={card} small />
+          <PlayingCard key={card.id} card={card} size="sm" />
         ))}
         {revealedCards.length > 0 && nonRevealedCards.length > 0 && (
           <div className="w-px h-8 bg-green-600 mx-0.5 self-center" />
         )}
         {nonRevealedCards.map((card, i) =>
           markedCardIds.has(card.id) ? (
-            <CardComponent key={card.id} card={card} small />
+            <PlayingCard key={card.id} card={card} size="sm" marked />
           ) : (
-            <CardComponent key={`blind-${i}`} card={{ rank: '3', suit: '\u2660', id: '' }} faceDown small />
+            <PlayingCard key={`blind-${i}`} size="sm" faceDown />
           ),
         )}
         {hand.length === 0 && <span className="text-gray-400 text-xs italic">No cards</span>}

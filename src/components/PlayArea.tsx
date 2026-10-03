@@ -1,12 +1,11 @@
 import { Move } from '../game/moves'
-import { CardComponent } from './CardComponent'
+import { SEAT_NAMES } from '../game/players'
+import { PlayingCard } from './PlayingCard'
 
 interface Props {
   currentTrick: Move | null
   lastPlayedBy: number | null
 }
-
-const SEAT_NAMES = ['You', 'Lan', 'Minh', 'Tuấn']
 
 export function PlayArea({ currentTrick, lastPlayedBy }: Props) {
   return (
@@ -15,7 +14,7 @@ export function PlayArea({ currentTrick, lastPlayedBy }: Props) {
         <>
           <div className="flex gap-1 flex-wrap justify-center">
             {currentTrick.cards.map(card => (
-              <CardComponent key={card.id} card={card} />
+              <PlayingCard key={card.id} card={card} size="lg" />
             ))}
           </div>
           <div className="text-gray-400 text-xs">

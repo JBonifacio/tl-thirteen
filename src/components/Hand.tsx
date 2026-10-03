@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Card, compareCards } from '../game/cards'
 import { Move, isValidPlay } from '../game/moves'
-import { CardComponent } from './CardComponent'
+import { PlayingCard } from './PlayingCard'
 
 interface Props {
   hand: Card[]
@@ -48,9 +48,10 @@ export function Hand({ hand, isActive, currentTrick, onPlay, onPass }: Props) {
       {/* Card row */}
       <div className="flex gap-1 flex-wrap justify-center">
         {sorted.map(card => (
-          <CardComponent
+          <PlayingCard
             key={card.id}
             card={card}
+            size="md"
             selected={selected.has(card.id)}
             onClick={() => toggleCard(card)}
           />

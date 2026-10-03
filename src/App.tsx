@@ -1,7 +1,11 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { useGameStore } from './store/gameStore'
 import { BeginScreen } from './components/BeginScreen'
 import { GameScreen } from './components/GameScreen'
+
+// Dev-only UI gallery at ?preview — the DEV check lets the production build drop it
+const UiPreview = import.meta.env.DEV ? lazy(() => import('./dev/UiPreview')) : null
+const showPreview = !!UiPreview && new URLSearchParams(window.location.search).has('preview')
 
 function ExpiredScreen({ puzzleDate }: { puzzleDate: string }) {
   return (
@@ -31,6 +35,7 @@ export default function App() {
     initGame()
   }, [initGame])
 
+  if (showPreview && UiPreview) return <Suspense fallback={null}><UiPreview /></Suspense>
   if (isExpired) return <ExpiredScreen puzzleDate={puzzleDate} />
   if (phase === 'begin') return <BeginScreen />
   return <GameScreen />

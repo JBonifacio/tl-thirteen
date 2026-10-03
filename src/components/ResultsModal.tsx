@@ -3,6 +3,7 @@ import { useGameStore } from '../store/gameStore'
 import { buildShareText } from '../game/bot'
 import { formatTime, positionLabel, positionMedal } from '../game/puzzle'
 import { getRetryCount } from '../game/session'
+import { BOT_NAMES } from '../game/players'
 import { LeaderboardModal } from './LeaderboardModal'
 import { ReplayModal } from './ReplayModal'
 
@@ -56,8 +57,6 @@ export function ResultsModal() {
       setTimeout(() => setCopied(false), 2000)
     })
   }
-
-  const BOT_NAMES = ['Lan', 'Minh', 'Tuấn']
 
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">

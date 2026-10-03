@@ -396,7 +396,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
     }
 
-    const playLog: LogEntry[] = [{ seat, move }, ...state.playLog].slice(0, 3)
+    const playLog: LogEntry[] = [{ seat, move }, ...state.playLog].slice(0, 8)
 
     set({
       hands: newHands,
@@ -453,7 +453,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const newPassed = state.passedThisRound.includes(seat) ? state.passedThisRound : [...state.passedThisRound, seat]
     const newDeclined = [...state.declinedThisTrick, seat]
     const playerMoveCount = seat === 0 ? state.playerMoveCount + 1 : state.playerMoveCount
-    const playLog: LogEntry[] = [{ seat, move: null }, ...state.playLog].slice(0, 3)
+    const playLog: LogEntry[] = [{ seat, move: null }, ...state.playLog].slice(0, 8)
 
     if (!state.isRetry) {
       currentRoundTurns.push({ seat, action: 'pass', cards: [] })

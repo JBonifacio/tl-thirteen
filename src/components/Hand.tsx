@@ -5,6 +5,7 @@ import { PlayingCard } from './PlayingCard'
 import { fitStep, useWidth } from './CardFan'
 import { Button } from './ui/Button'
 import { Icon } from './ui/Icon'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 
 interface Props {
   hand: Card[]
@@ -17,8 +18,6 @@ interface Props {
   lastPlayedBy: number // seat that played the current trick, for the invalid-play message
   waitingFor: string | null // name of the player whose turn it is, when it isn't ours
 }
-
-const CARD_WIDTH = 48
 
 export function Hand({
   hand,
@@ -34,10 +33,13 @@ export function Hand({
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const fanRef = useRef<HTMLDivElement>(null)
   const width = useWidth(fanRef)
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   const sorted = [...hand].sort(compareCards)
   const selectedCards = sorted.filter(c => selected.has(c.id))
-  const step = fitStep(sorted.length, CARD_WIDTH, width, 28, 16)
+  
+  const cardW = isDesktop ? 64 : 48
+  const step = fitStep(sorted.length, cardW, width, isDesktop ? 36 : 28, isDesktop ? 22 : 16)
 
   const problem = isActive
     ? explainInvalidPlay(selectedCards, currentTrick, { mustInclude3S, lastPlayedBy, hasPassed: bombsOnly })
@@ -92,40 +94,44 @@ export function Hand({
         {isActive && <span className="text-[13px] text-muted">{selected.size} selected</span>}
       </div>
 
-      <div ref={fanRef} className="flex justify-center pt-3.5">
-        {sorted.map((card, i) => (
-          <PlayingCard
-            key={card.id}
-            card={card}
-            size="md"
-            selected={selected.has(card.id)}
-            tone={problem ? 'warn' : 'accent'}
-            onClick={isActive ? () => toggleCard(card) : undefined}
-            style={{ marginLeft: i === 0 ? 0 : step - CARD_WIDTH }}
-          />
-        ))}
-      </div>
+      <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3.5 lg:gap-8">
+        <div className="flex-1 min-w-0">
+          <div ref={fanRef} className="flex justify-center lg:justify-start pt-3.5">
+            {sorted.map((card, i) => (
+              <PlayingCard
+                key={card.id}
+                card={card}
+                size={isDesktop ? 'lg' : 'md'}
+                selected={selected.has(card.id)}
+                tone={problem ? 'warn' : 'accent'}
+                onClick={isActive ? () => toggleCard(card) : undefined}
+                style={{ marginLeft: i === 0 ? 0 : step - cardW }}
+              />
+            ))}
+          </div>
 
-      {/* Always mounted so screen readers announce changes; two lines reserved so nothing jumps */}
-      <p
-        role="status"
-        className="-my-1 min-h-[36px] flex items-center justify-center gap-1.5 text-center text-[13px] leading-[18px] text-warn"
-      >
-        {problem && (
-          <>
-            <Icon name="alert" size={14} strokeWidth={2} className="flex-shrink-0" />
-            <span>{problem}</span>
-          </>
-        )}
-      </p>
+          {/* Always mounted so screen readers announce changes; two lines reserved so nothing jumps */}
+          <p
+            role="status"
+            className="-my-1 min-h-[36px] flex items-center justify-center lg:justify-start gap-1.5 text-center lg:text-left text-[13px] leading-[18px] text-warn"
+          >
+            {problem && (
+              <>
+                <Icon name="alert" size={14} strokeWidth={2} className="flex-shrink-0" />
+                <span>{problem}</span>
+              </>
+            )}
+          </p>
+        </div>
 
-      <div className="grid grid-cols-[1fr_2fr] gap-2">
-        <Button variant="secondary" onClick={handlePass} disabled={!canPass}>
-          Pass
-        </Button>
-        <Button onClick={handlePlay} disabled={!canPlay}>
-          {playLabel}
-        </Button>
+        <div className="grid grid-cols-[1fr_2fr] lg:flex lg:flex-col lg:w-[160px] lg:shrink-0 gap-2 lg:mb-[32px]">
+          <Button variant="secondary" onClick={handlePass} disabled={!canPass}>
+            Pass
+          </Button>
+          <Button onClick={handlePlay} disabled={!canPlay}>
+            {playLabel}
+          </Button>
+        </div>
       </div>
     </div>
   )

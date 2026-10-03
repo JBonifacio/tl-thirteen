@@ -1,6 +1,6 @@
 # UI Redesign — minimal, mobile-first, light and dark
 
-**Status:** In progress — Phases 1–3 done, Phase 4 next
+**Status:** In progress — Phases 1–4 done, Phase 5 next
 **Design:** [Claude Design canvas](https://claude.ai/artifact/M2D4FRPzQ3dnx3o6WbKLut). This has 18 artboards: each screen in light and dark, plus a desktop Game screen, an invalid-selection state, and 1st-place Results.
 **Goal:** Replace the green felt-table look with a calm, minimal interface that works first on a phone, supports dark mode, and makes opponent information readable at a glance. Add the new behaviors the design introduced: explaining invalid plays, native sharing, and 1st-place confetti.
 
@@ -113,13 +113,18 @@ Matches "Game · invalid selection". Today Play just greys out. Worse, a first p
 
 Matches "Game · desktop". From 1024px only. Below that, the Phase 2 layout applies.
 
-- [ ] Use a two-column layout up to 1280px wide: the main area and a 280px sidebar that drops below the main area on narrower windows.
-- [ ] Main area: opponent cards in a three-column grid (`sm` cards, tells in the card header), the table with `xl` cards, and the hand panel with `lg` cards and Pass and Play to the right.
-- [ ] Sidebar: a Recent plays list (rows with card chips) and "Tells in play today".
-- [ ] Clicking an opponent opens the opponent sheet as a pop-up window.
-- [ ] Raise the `playLog` cap from 3 to 8 in `gameStore.ts` (lines 392 and 447). The mobile strip still shows only the latest 3.
+- [x] Use a two-column layout up to 1280px wide: the main area and a 280px sidebar that drops below the main area on narrower windows.
+- [x] Main area: opponent cards in a three-column grid (`sm` cards, tells in the card header), the table with `xl` cards, and the hand panel with `lg` cards and Pass and Play to the right.
+- [x] Sidebar: a Recent plays list (rows with card chips) and "Tells in play today".
+- [x] Clicking an opponent opens the opponent sheet as a pop-up window.
+- [x] Raise the `playLog` cap from 3 to 8 in `gameStore.ts` (lines 392 and 447). The mobile strip still shows only the latest 3.
 
 **Done when:** at 1280px and 1024px the screen matches the canvas in both themes, and resizing to phone width switches cleanly to the mobile layout.
+
+**Shipped notes (2026-10-03):**
+- Added `useMediaQuery` hook for cleanly responding to the `1024px` breakpoint via JS so the right card `size` enum is passed to `PlayingCard` and `CardFan`.
+- Implemented CSS Grid structure in `GameScreen` with the new sidebar for desktop.
+- Verified desktop rendering across light and dark modes via headless browser screenshots.
 
 ## Phase 5 — Start and expired screens
 

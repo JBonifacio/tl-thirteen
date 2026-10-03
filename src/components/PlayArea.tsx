@@ -3,6 +3,7 @@ import { Move, moveName, moveNameWithArticle } from '../game/moves'
 import { SEAT_NAMES } from '../game/players'
 import { PlayingCard } from './PlayingCard'
 import { fitStep, useWidth } from './CardFan'
+import { useMediaQuery } from '../hooks/useMediaQuery'
 
 interface Props {
   currentTrick: Move | null
@@ -16,6 +17,7 @@ interface Props {
 export function PlayArea({ currentTrick, lastPlayedBy, currentPlayer, isPlayerTurn, isOpeningPlay, playerHasPassed }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const width = useWidth(ref)
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   if (!currentTrick) {
     const lead = isPlayerTurn
@@ -31,7 +33,8 @@ export function PlayArea({ currentTrick, lastPlayedBy, currentPlayer, isPlayerTu
   }
 
   const n = currentTrick.cards.length
-  const step = fitStep(n, 64, width, 72, 22)
+  const cardW = isDesktop ? 88 : 64
+  const step = fitStep(n, cardW, width, isDesktop ? 96 : 72, isDesktop ? 26 : 22)
   const who = lastPlayedBy !== null ? SEAT_NAMES[lastPlayedBy] : ''
   const isSingle2 = currentTrick.type === 'single' && currentTrick.cards[0].rank === '2'
 
@@ -49,7 +52,7 @@ export function PlayArea({ currentTrick, lastPlayedBy, currentPlayer, isPlayerTu
       </p>
       <div className="flex">
         {currentTrick.cards.map((card, i) => (
-          <PlayingCard key={card.id} card={card} size="lg" style={{ marginLeft: i === 0 ? 0 : step - 64 }} />
+          <PlayingCard key={card.id} card={card} size={isDesktop ? 'xl' : 'lg'} style={{ marginLeft: i === 0 ? 0 : step - cardW }} />
         ))}
       </div>
       {hint && <p className="text-[13px] text-muted text-center">{hint}</p>}

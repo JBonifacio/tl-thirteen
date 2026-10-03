@@ -1,4 +1,5 @@
 import { Card, RANK_INDEX, compareCards, cardValue } from './cards'
+import { SEAT_NAMES } from './players'
 
 export type MoveType =
   | 'single'
@@ -99,6 +100,80 @@ export function isValidPlay(cards: Card[], currentTrick: Move | null): MoveType 
   const move: Move = { type, cards }
   if (!beatsMove(move, currentTrick)) return null
   return type
+}
+
+// ── labels ────────────────────────────────────────────────────────────────────
+
+/** Short name for a combination, e.g. "pair", "5-card straight", "four of a kind". */
+export function moveName(type: MoveType, cardCount: number): string {
+  switch (type) {
+    case 'single': return 'single'
+    case 'pair': return 'pair'
+    case 'triple': return 'triple'
+    case 'four_of_a_kind': return 'four of a kind'
+    case 'sequence': return `${cardCount}-card straight`
+    case 'sequence_of_pairs': return `${cardCount / 2}-pair sequence`
+  }
+}
+
+/** "a pair", "four of a kind" — for sentences like "Minh played a pair". */
+export function moveNameWithArticle(type: MoveType, cardCount: number): string {
+  return type === 'four_of_a_kind' ? moveName(type, cardCount) : `a ${moveName(type, cardCount)}`
+}
+
+/**
+ * A player who passed is out until the round ends — except that when the play
+ * on the table is a single 2, they may come back in with a bomb.
+ */
+export function canBombBackIn(hand: Card[], currentTrick: Move | null): boolean {
+  if (!currentTrick || currentTrick.type !== 'single' || currentTrick.cards[0].rank !== '2') return false
+  return generateAllValidMoves(hand, currentTrick).some(m => isBomb(m.type))
+}
+
+// ── invalid-play feedback ─────────────────────────────────────────────────────
+
+const cardText = (c: Card) => `${c.rank}${c.suit}`
+
+interface ExplainContext {
+  mustInclude3S: boolean // the game's opening play
+  lastPlayedBy: number // seat that put the current trick down
+  hasPassed: boolean // passed this round: only a bomb on a single 2 brings them back
+}
+
+/**
+ * Why `cards` can't be played on `currentTrick`, as one short sentence — or null
+ * when the play is legal. Mirrors the guards in `playerPlay` (gameStore.ts).
+ */
+export function explainInvalidPlay(cards: Card[], currentTrick: Move | null, ctx: ExplainContext): string | null {
+  if (cards.length === 0) return null
+  if (ctx.mustInclude3S && !cards.some(c => c.id === '3\u2660')) return 'Your first play must include 3♠.'
+
+  const type = classifyMove(cards)
+  if (!type) return "That's not a valid combination."
+
+  const onSingle2 = !!currentTrick && currentTrick.type === 'single' && currentTrick.cards[0].rank === '2'
+  if (ctx.hasPassed && !(onSingle2 && isBomb(type))) return 'You passed — only a bomb brings you back.'
+
+  if (!currentTrick) return isBomb(type) ? 'Bombs can only be played on a single 2.' : null
+  if (beatsMove({ type, cards }, currentTrick)) return null
+
+  const who = SEAT_NAMES[ctx.lastPlayedBy]
+  const n = currentTrick.cards.length
+  if (onSingle2 && type !== 'single') return `${who} played a 2 — beat it with a higher 2 or a bomb.`
+  if (isBomb(type) && !onSingle2 && !isBomb(currentTrick.type)) return 'Bombs only beat a single 2.'
+  if (type !== currentTrick.type || cards.length !== n) {
+    const name = moveNameWithArticle(currentTrick.type, n)
+    const isLong = currentTrick.type === 'sequence' || currentTrick.type === 'sequence_of_pairs'
+    return `${who} played ${name} — ${isLong ? 'match it' : `play ${name}`} to beat it.`
+  }
+
+  // Right shape, too low. Short combos list their cards; long ones name only the top card.
+  const sorted = [...currentTrick.cards].sort(compareCards)
+  if (type === 'sequence' || type === 'sequence_of_pairs') {
+    const shape = type === 'sequence' ? 'straight' : 'sequence'
+    return `Your ${shape} needs a higher top card than ${cardText(sorted[sorted.length - 1])}.`
+  }
+  return `Your ${moveName(type, n)} has to beat ${sorted.map(cardText).join(' ')}.`
 }
 
 // ── generation (for bot AI) ───────────────────────────────────────────────────

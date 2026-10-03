@@ -34,4 +34,5 @@ db.transaction(() => {
 // Enable WAL mode for better concurrent read performance AFTER schema is ready
 db.pragma('journal_mode = WAL')
 
+
 export default db

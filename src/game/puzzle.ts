@@ -32,6 +32,3 @@ export function positionLabel(pos: number): string {
   return ['1st', '2nd', '3rd', '4th'][pos - 1] ?? `${pos}th`
 }
 
-export function positionMedal(pos: number): string {
-  return ['\uD83E\uDD47', '\uD83E\uDD48', '\uD83E\uDD49', ''][pos - 1] ?? ''
-}

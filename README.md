@@ -110,14 +110,16 @@ src/
     gameStore.ts      Zustand store — full game loop, bot turn scheduling
   components/
     BeginScreen.tsx   Start screen shown before game begins
-    GameScreen.tsx    Main game layout
+    GameScreen.tsx    Main game layout (responsive desktop/mobile)
     Hand.tsx          Player's hand with card selection and play/pass buttons
-    BotPanel.tsx      Bot card count, confirmed tells, hint button
     PlayArea.tsx      Current trick on the table
-    TellHUD.tsx       Sidebar showing today's active tells
-    Timer.tsx         Live elapsed timer
-    ResultsModal.tsx  Post-game result, share button, bot tell reveal
-plans/
+    OpponentRow.tsx   Opponent summary row (mobile) / card (desktop)
+    OpponentSheet.tsx Detailed opponent stats and hand view
+    ResultsModal.tsx  Post-game result, share button, confetti, bot tell reveal
+    LeaderboardModal.tsx Global daily leaderboard
+    ReplayModal.tsx   Turn-by-turn game log
+    ui/               Base primitives (Button, Icon, Sheet)
+  plans/
   game-design.md      Full game design document
   bot-tells.md        Tell system design and registry documentation
 ```

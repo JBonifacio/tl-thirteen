@@ -8,6 +8,7 @@ const PORT = parseInt(process.env.PORT || '3001', 10)
 
 // Trust proxy for rate limiting (behind Nginx/Cloudflare)
 app.set('trust proxy', 1)
+app.disable('x-powered-by')
 
 // Security headers
 app.use(helmet())

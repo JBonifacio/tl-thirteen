@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express'
 import db from '../db'
 import { isCleanNickname } from '../middleware/profanity'
+import crypto from 'crypto'
 
 const router = Router()
 
@@ -30,6 +31,8 @@ interface ScoreBody {
   moves: number
   elapsedMs: number
   hintPenaltyMs: number
+  signature?: string
+  token?: string
 }
 
 interface ScoreRow {
@@ -46,7 +49,7 @@ function getLeaderboard(puzzleDate: string) {
     SELECT nickname, position, moves, elapsed_ms, hint_penalty_ms
     FROM scores
     WHERE puzzle_date = ?
-    ORDER BY position ASC, moves ASC, elapsed_ms ASC
+    ORDER BY position ASC, moves ASC, (elapsed_ms + hint_penalty_ms) ASC
   `).all(puzzleDate) as ScoreRow[]
 }
 
@@ -65,10 +68,24 @@ function buildResponse(puzzleDate: string, nickname?: string) {
   return { scores, yourRank }
 }
 
+function verifySignature(body: ScoreBody): boolean {
+  if (!body.signature) return false
+  const secret = 'tl_thirteen_salt_2026'
+  const nickname = typeof body.nickname === 'string' ? body.nickname.trim() : ''
+  const msg = `${body.puzzleDate}:${nickname}:${body.position}:${body.moves}:${body.elapsedMs}:${body.hintPenaltyMs || 0}`
+  const hash = crypto.createHash('sha256').update(msg + secret).digest('hex')
+  return hash === body.signature
+}
+
 // POST /api/scores
 router.post('/scores', (req: Request, res: Response) => {
   try {
     const body = req.body as ScoreBody
+
+    if (!verifySignature(body)) {
+      res.status(403).json({ error: 'Invalid payload signature' })
+      return
+    }
 
     // Validate puzzleDate
     if (!body.puzzleDate || !isValidDate(body.puzzleDate)) {

@@ -2,9 +2,130 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── fonts (self-hosted; CSP allows font-src 'self' only) ──────────────────── */
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/Geist-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/Geist-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist';
+  src: url('/fonts/Geist-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Geist Mono';
+  src: url('/fonts/GeistMono-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ── theme tokens (RGB channels so Tailwind opacity modifiers work) ────────── */
+
 @layer base {
+  :root {
+    color-scheme: light;
+    --c-bg: 245 246 247;
+    --c-surface: 255 255 255;
+    --c-ink: 17 20 24;
+    --c-muted: 91 99 110;
+    --c-line: 228 231 235;
+    --c-card-line: 213 218 224;
+    --c-chip: 238 240 242;
+    --c-card-face: 255 255 255;
+    --c-warn: 180 83 9;
+    --c-suit-spade: 17 20 24;
+    --c-suit-heart: 200 49 42;
+    --c-suit-diamond: 31 95 209;
+    --c-suit-club: 21 122 62;
+    --c-accent: 15 123 92;
+    --c-on-accent: 255 255 255;
+    --c-accent-text: 15 123 92;
+    --c-back: 52 80 127;
+    --c-back-stripe: 63 94 146;
+    --c-back-edge: 213 218 224;
+    --c-shadow: 17 20 24;
+  }
+
+  .dark {
+    color-scheme: dark;
+    --c-bg: 15 17 20;
+    --c-surface: 23 26 31;
+    --c-ink: 237 239 242;
+    --c-muted: 154 163 174;
+    --c-line: 38 43 50;
+    --c-card-line: 54 60 69;
+    --c-chip: 36 41 48;
+    --c-card-face: 30 34 40;
+    --c-warn: 240 160 80;
+    --c-suit-spade: 237 239 242;
+    --c-suit-heart: 255 107 97;
+    --c-suit-diamond: 110 160 255;
+    --c-suit-club: 76 201 127;
+    --c-accent: 23 128 90;
+    --c-on-accent: 255 255 255;
+    --c-accent-text: 63 198 138;
+    --c-back: 34 56 94;
+    --c-back-stripe: 43 68 114;
+    --c-back-edge: 140 150 164;
+    --c-shadow: 0 0 0;
+  }
+
   body {
-    @apply bg-green-950 text-white;
-    font-family: system-ui, -apple-system, sans-serif;
+    @apply bg-bg text-ink font-sans antialiased;
+  }
+}
+
+@layer components {
+  /* Navy striped card back */
+  .card-back {
+    background-image: repeating-linear-gradient(
+      45deg,
+      rgb(var(--c-back)) 0 3px,
+      rgb(var(--c-back-stripe)) 3px 6px
+    );
+  }
+
+  /* Sheet entrance */
+  .sheet-in {
+    animation: sheet-in 200ms ease-out;
+  }
+  .sheet-fade {
+    animation: sheet-fade 200ms ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .sheet-in,
+    .sheet-fade {
+      animation: none;
+    }
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+}
+
+@keyframes sheet-fade {
+  from {
+    opacity: 0;
   }
 }

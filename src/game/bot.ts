@@ -1,5 +1,5 @@
 import { Card } from './cards'
-import { Move } from './moves'
+import { Move, canBombBackIn } from './moves'
 import { TellDefinition, TurnContext, applyTells, ApplyResult } from './tells'
 
 export function decideBotMove(
@@ -10,14 +10,34 @@ export function decideBotMove(
   return applyTells(tells, hand, context)
 }
 
+/**
+ * Whether a seat sits out the current play. Passing locks a player out for the
+ * rest of the round, unless a single 2 is on the table and they hold a bomb —
+ * then they get one chance per trick to bomb back in (declinedThisTrick records
+ * who has already had, and passed on, that chance).
+ */
+function isOutOfPlay(
+  seat: number,
+  hands: Card[][],
+  passedThisRound: number[],
+  currentTrick: Move | null,
+  declinedThisTrick: number[],
+): boolean {
+  if (hands[seat].length === 0) return true
+  if (!passedThisRound.includes(seat)) return false
+  return declinedThisTrick.includes(seat) || !canBombBackIn(hands[seat], currentTrick)
+}
+
 export function getNextActivePlayer(
   from: number,
   hands: Card[][],
   passedThisRound: number[],
+  currentTrick: Move | null,
+  declinedThisTrick: number[],
 ): number {
   for (let offset = 1; offset <= 4; offset++) {
     const candidate = (from + offset) % 4
-    if (hands[candidate].length > 0 && !passedThisRound.includes(candidate)) {
+    if (!isOutOfPlay(candidate, hands, passedThisRound, currentTrick, declinedThisTrick)) {
       return candidate
     }
   }
@@ -28,9 +48,11 @@ export function isRoundOver(
   lastPlayedBy: number,
   hands: Card[][],
   passedThisRound: number[],
+  currentTrick: Move | null,
+  declinedThisTrick: number[],
 ): boolean {
   return [0, 1, 2, 3].every(
-    i => hands[i].length === 0 || i === lastPlayedBy || passedThisRound.includes(i),
+    i => i === lastPlayedBy || isOutOfPlay(i, hands, passedThisRound, currentTrick, declinedThisTrick),
   )
 }
 
@@ -49,14 +71,15 @@ export function findLeaderAfterWin(
   return winner
 }
 
-export function buildShareText(
+export function buildShareParts(
   puzzleNumber: number,
   puzzleDate: string,
   position: number,
   elapsedMs: number,
   moveCount: number,
   hintPenaltyMs: number,
-): string {
+  isRetry: boolean,
+) {
   const medals = ['\uD83E\uDD47', '\uD83E\uDD48', '\uD83E\uDD49', '']
   const medal = medals[position - 1] ?? ''
   const posLabel = ['1st', '2nd', '3rd', '4th'][position - 1] ?? `${position}th`
@@ -70,15 +93,33 @@ export function buildShareText(
     ? ` (+${Math.floor(hintPenaltyMs / 1000 / 60)}:${String(Math.floor(hintPenaltyMs / 1000) % 60).padStart(2, '0')} hint)`
     : ''
 
-  const url = `${window.location.origin}?d=${puzzleDate}`
-
-  return [
-    `Tien Len Daily #${puzzleNumber} \uD83C\uDCCF`,
+  const title = `Tien Len Daily #${puzzleNumber} \uD83C\uDCCF`
+  const text = isRetry ? [
+    title,
+    `Finished: ${posLabel} ${medal}`,
+    `(Retry)`,
+  ].join('\n') : [
+    title,
     `Finished: ${posLabel} ${medal}`,
     `Moves: ${moveCount}`,
     `Time: ${timeStr}${penaltyStr}`,
-    url,
   ].join('\n')
+  const url = `${window.location.origin}?d=${puzzleDate}`
+
+  return { title, text, url }
+}
+
+export function buildShareText(
+  puzzleNumber: number,
+  puzzleDate: string,
+  position: number,
+  elapsedMs: number,
+  moveCount: number,
+  hintPenaltyMs: number,
+  isRetry: boolean = false,
+): string {
+  const { text, url } = buildShareParts(puzzleNumber, puzzleDate, position, elapsedMs, moveCount, hintPenaltyMs, isRetry)
+  return `${text}\n${url}`
 }
 
 export type { Move }

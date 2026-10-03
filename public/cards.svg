@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="14" fill="#F5F6F7"/>
+  <text x="17" y="30" font-family="Georgia, serif" font-size="22" text-anchor="middle" fill="#111418">♠</text>
+  <text x="47" y="30" font-family="Georgia, serif" font-size="22" text-anchor="middle" fill="#C8312A">♥</text>
+  <text x="17" y="56" font-family="Georgia, serif" font-size="22" text-anchor="middle" fill="#1F5FD1">♦</text>
+  <text x="47" y="56" font-family="Georgia, serif" font-size="22" text-anchor="middle" fill="#157A3E">♣</text>
+</svg>

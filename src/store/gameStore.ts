@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { Card } from '../game/cards'
-import { Move, isValidPlay } from '../game/moves'
+import { Move, isValidPlay, isBomb } from '../game/moves'
 
 export interface LogEntry {
   seat: number
@@ -43,6 +43,7 @@ export interface GameStore {
   roundLeader: number
   lastPlayedBy: number
   passedThisRound: number[]
+  declinedThisTrick: number[] // passed players who already turned down a bomb-back-in chance on this trick
 
   // finish tracking
   finishOrder: number[]
@@ -164,6 +165,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   roundLeader: 0,
   lastPlayedBy: 0,
   passedThisRound: [],
+  declinedThisTrick: [],
   finishOrder: [],
   startTime: null,
   playerEndTime: null,
@@ -220,6 +222,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         roundLeader: startingPlayer,
         lastPlayedBy: startingPlayer,
         passedThisRound: [],
+        declinedThisTrick: [],
         finishOrder: [],
         playLog: [],
         botRevealedCardIds: [new Set(), new Set(), new Set()],
@@ -243,6 +246,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       roundLeader: startingPlayer,
       lastPlayedBy: startingPlayer,
       passedThisRound: [],
+      declinedThisTrick: [],
       finishOrder: [],
       startTime: null,
       playerEndTime: null,
@@ -279,6 +283,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (state.playLog.length === 0 && !cards.some(c => c.id === '3\u2660')) return
     const type = isValidPlay(cards, state.currentTrick)
     if (!type) return
+    // After passing, the only way back into the round is a bomb on a single 2
+    if (state.passedThisRound.includes(0) && !isBomb(type)) return
     get()._applyPlay(0, { type, cards })
   },
 
@@ -328,6 +334,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       roundLeader: startingPlayer,
       lastPlayedBy: startingPlayer,
       passedThisRound: [],
+      declinedThisTrick: [],
       finishOrder: [],
       startTime: null,
       playerEndTime: null,
@@ -389,13 +396,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
     }
 
-    const playLog: LogEntry[] = [{ seat, move }, ...state.playLog].slice(0, 3)
+    const playLog: LogEntry[] = [{ seat, move }, ...state.playLog].slice(0, 8)
 
     set({
       hands: newHands,
       currentTrick: move,
       lastPlayedBy: seat,
-      passedThisRound: [],
+      declinedThisTrick: [], // new play on the table: passed players with a bomb get a fresh chance if it is a single 2
+      passedThisRound: state.passedThisRound.filter(s => s !== seat), // bombing back in rejoins the round
       startTime,
       playerMoveCount,
       finishOrder,
@@ -442,20 +450,21 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   _applyPass: (seat) => {
     const state = get()
-    const newPassed = [...state.passedThisRound, seat]
+    const newPassed = state.passedThisRound.includes(seat) ? state.passedThisRound : [...state.passedThisRound, seat]
+    const newDeclined = [...state.declinedThisTrick, seat]
     const playerMoveCount = seat === 0 ? state.playerMoveCount + 1 : state.playerMoveCount
-    const playLog: LogEntry[] = [{ seat, move: null }, ...state.playLog].slice(0, 3)
+    const playLog: LogEntry[] = [{ seat, move: null }, ...state.playLog].slice(0, 8)
 
     if (!state.isRetry) {
       currentRoundTurns.push({ seat, action: 'pass', cards: [] })
     }
 
-    set({ passedThisRound: newPassed, playerMoveCount, playLog })
+    set({ passedThisRound: newPassed, declinedThisTrick: newDeclined, playerMoveCount, playLog })
 
-    if (isRoundOver(state.lastPlayedBy, state.hands, newPassed)) {
+    if (isRoundOver(state.lastPlayedBy, state.hands, newPassed, state.currentTrick, newDeclined)) {
       const newLeader = findLeaderAfterWin(state.lastPlayedBy, state.hands)
       if (!state.isRetry) flushRound()
-      set({ currentTrick: null, roundLeader: newLeader, passedThisRound: [], currentPlayer: newLeader })
+      set({ currentTrick: null, roundLeader: newLeader, passedThisRound: [], declinedThisTrick: [], currentPlayer: newLeader })
       if (newLeader !== 0) get()._scheduleBotTurn(newLeader)
       return
     }
@@ -465,12 +474,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   _advanceAfterAction: (seat) => {
     const state = get()
-    const next = getNextActivePlayer(seat, state.hands, state.passedThisRound)
+    const next = getNextActivePlayer(seat, state.hands, state.passedThisRound, state.currentTrick, state.declinedThisTrick)
 
     if (next === -1) {
       if (!state.isRetry) flushRound()
       const newLeader = findLeaderAfterWin(state.lastPlayedBy, state.hands)
-      set({ currentTrick: null, roundLeader: newLeader, passedThisRound: [], currentPlayer: newLeader })
+      set({ currentTrick: null, roundLeader: newLeader, passedThisRound: [], declinedThisTrick: [], currentPlayer: newLeader })
       if (newLeader !== 0) get()._scheduleBotTurn(newLeader)
       return
     }
@@ -511,6 +520,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const { chosen, triggeredIds } = decideBotMove(hand, tells, {
       currentTrick: state.currentTrick,
       mustIncludeCardId: isOpeningPlay ? '3\u2660' : undefined,
+      bombsOnly: state.passedThisRound.includes(seat),
     })
 
     const newObservations = state.tellObservations.map((obs, bi) => {

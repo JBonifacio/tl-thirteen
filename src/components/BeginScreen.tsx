@@ -1,6 +1,9 @@
+import { useState } from 'react'
 import { useGameStore } from '../store/gameStore'
 import { Button } from './ui/Button'
 import { Icon } from './ui/Icon'
+import { IconButton } from './ui/IconButton'
+import { HelpSheet } from './HelpSheet'
 
 function formatDate(isoDate: string): string {
   return new Date(`${isoDate}T00:00:00Z`).toLocaleDateString('en-US', {
@@ -13,9 +16,15 @@ function formatDate(isoDate: string): string {
 
 export function BeginScreen() {
   const { puzzleNumber, puzzleDate, startGame } = useGameStore()
+  const [helpOpen, setHelpOpen] = useState(false)
 
   return (
-    <div className="min-h-[100dvh] bg-bg text-ink flex flex-col items-center pt-[10vh] pb-[max(24px,env(safe-area-inset-bottom))] px-5 font-sans">
+    <div className="min-h-[100dvh] bg-bg text-ink flex flex-col items-center pt-[10vh] pb-[max(24px,env(safe-area-inset-bottom))] px-5 font-sans relative">
+      <div className="absolute top-3 right-3 lg:top-5 lg:right-5">
+        <IconButton icon="help" label="Help & Settings" onClick={() => setHelpOpen(true)} />
+      </div>
+
+      <HelpSheet open={helpOpen} onClose={() => setHelpOpen(false)} />
       <div className="flex-1 flex flex-col items-center w-full max-w-[420px]">
         
         {/* Suit mark & Title */}

@@ -1,3 +1,4 @@
+import { CSSProperties } from 'react'
 import { Card, Suit } from '../game/cards'
 
 export type CardSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'
@@ -11,6 +12,7 @@ interface Props {
   marked?: boolean // face-up card identified by a tell (shown in an opponent's hand)
   onClick?: () => void
   className?: string
+  style?: CSSProperties // e.g. marginLeft from a fan layout
 }
 
 // Dimensions match the design canvas
@@ -22,7 +24,7 @@ const SIZES: Record<CardSize, { box: string; rank: string; suit: string; pip?: s
   xl: { box: 'w-[88px] h-[126px] rounded-xl pt-2.5 px-[11px] pb-2.5', rank: 'text-2xl', suit: 'text-xl', pip: 'text-4xl' },
 }
 
-const SUIT_COLOR: Record<Suit, string> = {
+export const SUIT_COLOR: Record<Suit, string> = {
   '♠': 'text-suit-spade',
   '♣': 'text-suit-club',
   '♦': 'text-suit-diamond',
@@ -51,6 +53,7 @@ export function PlayingCard({
   marked = false,
   onClick,
   className = '',
+  style,
 }: Props) {
   const s = SIZES[size]
   // relative: a lifted (transformed) card would otherwise paint above its
@@ -63,6 +66,7 @@ export function PlayingCard({
         role="img"
         aria-label="Hidden card"
         className={`${base} card-back border border-back-edge shadow-sm shadow-shadow/10 ${className}`}
+        style={style}
       />
     )
   }
@@ -96,6 +100,7 @@ export function PlayingCard({
         aria-label={cardLabel(card)}
         aria-pressed={selected}
         onClick={onClick}
+        style={style}
         className={`${classes} cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent`}
       >
         {face}
@@ -104,7 +109,7 @@ export function PlayingCard({
   }
 
   return (
-    <div role="img" aria-label={cardLabel(card) + (marked ? ', marked' : '')} className={classes}>
+    <div role="img" aria-label={cardLabel(card) + (marked ? ', marked' : '')} className={classes} style={style}>
       {face}
     </div>
   )

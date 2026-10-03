@@ -1,6 +1,6 @@
 # UI Redesign — minimal, mobile-first, light and dark
 
-**Status:** In progress — Phase 1 done, Phase 2 next
+**Status:** In progress — Phases 1–2 done, Phase 3 next
 **Design:** [Claude Design canvas](https://claude.ai/artifact/M2D4FRPzQ3dnx3o6WbKLut). This has 18 artboards: each screen in light and dark, plus a desktop Game screen, an invalid-selection state, and 1st-place Results.
 **Goal:** Replace the green felt-table look with a calm, minimal interface that works first on a phone, supports dark mode, and makes opponent information readable at a glance. Add the new behaviors the design introduced: explaining invalid plays, native sharing, and 1st-place confetti.
 
@@ -66,29 +66,38 @@ Nothing looks different yet except the font and page colors. Everything after th
 - Cards are `relative` so a lifted card doesn't hide its neighbour's corner.
 - Verified with headless Chrome at 390px and 1280px in both themes: the sheet's focus, Escape, backdrop and focus-return behaviour, the theme setting persisting and following the system, fonts self-hosted with no third-party requests, the game starting and playing, and no console errors.
 
-## Phase 2 — Game screen (mobile)
+## Phase 2 — Game screen (mobile) ✅
 
 Matches the artboards "Game · your turn" and "Opponent sheet".
 
-- [ ] Rebuild `GameScreen.tsx` as a single column: a header (title, puzzle number and date, timer pill, help button), three opponent rows, the table, a one-line recent-plays strip, and the hand panel.
-- [ ] Replace `BotPanel.tsx` with `OpponentRow.tsx`: name, a "Passed" or finished label, two tell dots, and the card fan (revealed cards face up first, then backs overlapped to show 12px each, with marked cards face up in place in the accent outline). The whole row is a button that opens the opponent sheet. Show no card counts. The accessible label includes the count for screen readers.
-- [ ] Add `OpponentSheet.tsx` (built on `Sheet`): their hand at `sm` size with the "Revealed by a tell / Unknown" key, a tells list (confirmed with a check, hidden with a lock), the "Reveal hidden tell +1:00" button wired to `revealHint`, and today's tells for all bots (from `getTellPool`). This replaces `TellHUD.tsx` on mobile.
-- [ ] Restyle `PlayArea.tsx`: "{who} played {combo}", cards at `lg` size, a hint line below, and an empty state for leading.
-- [ ] Restyle `RecentPlays.tsx` as the single-line strip, newest first, with colored card text.
-- [ ] Restyle `Hand.tsx`: cards at `md` size overlapped by 20px, lifting 14px when selected; a "Your turn" pill and a selected count; Pass (1 part) and Play (2 parts) buttons; a quiet "Waiting for Lan…" state when it isn't your turn.
-- [ ] Restyle `Timer.tsx` as the pill.
-- [ ] Bots that have finished show their place in the row instead of the fan.
+- [x] Rebuild `GameScreen.tsx` as a single column: a header (title, puzzle number and date, timer pill, help button), three opponent rows, the table, a one-line recent-plays strip, and the hand panel.
+- [x] Replace `BotPanel.tsx` with `OpponentRow.tsx`: name, a "Passed" or finished label, two tell dots, and the card fan (revealed cards face up first, then backs overlapped to show 12px each, with marked cards face up in place in the accent outline). The whole row is a button that opens the opponent sheet. Show no card counts. The accessible label includes the count for screen readers.
+- [x] Add `OpponentSheet.tsx` (built on `Sheet`): their hand at `sm` size with the "Revealed by a tell / Unknown" key, a tells list (confirmed with a check, hidden with a lock), the "Reveal hidden tell +1:00" button wired to `revealHint`, and today's tells for all bots (from `getTellPool`). This replaces `TellHUD.tsx` on mobile.
+- [x] Restyle `PlayArea.tsx`: "{who} played {combo}", cards at `lg` size, a hint line below, and an empty state for leading.
+- [x] Restyle `RecentPlays.tsx` as the single-line strip, newest first, with colored card text.
+- [x] Restyle `Hand.tsx`: cards at `md` size overlapped by 20px, lifting 14px when selected; a "Your turn" pill and a selected count; Pass (1 part) and Play (2 parts) buttons; a quiet "Waiting for Lan…" state when it isn't your turn.
+- [x] Restyle `Timer.tsx` as the pill.
+- [x] Bots that have finished show their place in the row instead of the fan.
+- [x] The header help button opens a "How to play" sheet (`HelpSheet.tsx`) with the three rule steps and the System / Light / Dark switch (`ThemeSwitch.tsx`). *Moved here from Phase 5.*
 
 **Done when:** a full game can be played at 390px in both themes with no horizontal scrolling, and opponent rows, the sheet, revealing a tell and selecting cards all work.
+
+**Shipped notes (2026-10-02):**
+- `BotPanel.tsx` and `TellHUD.tsx` are deleted.
+- `CardFan.tsx` lays out opponent fans and squeezes revealed spacing, then backs, then the gap so a fan always fits its row; the hand and table use the same `fitStep` so 13 cards fit at 375px.
+- `moves.ts` gained label helpers only (`moveName`, `moveNameWithArticle`); no rule changes.
+- The opponent name column is 96px so "Tuấn Playing…" isn't truncated.
+- Verified with headless Chrome at 390×844 and 375×667 in light and dark: opponent fans and the hand fit, names and status labels aren't clipped, no horizontal scroll, the help sheet and its theme switch, the opponent sheet (fits the viewport, reveal tell updates the count, lock list and row dots, closes on Escape), the "Waiting for…", "Playing…" and "Passed" labels, and a full game played through the UI to the results screen at both sizes, with no console errors.
 
 ## Phase 3 — Invalid-play feedback (new)
 
 Matches "Game · invalid selection". Today Play just greys out. Worse, a first play without 3♠ leaves Play enabled and silently does nothing (`gameStore.ts:279`).
 
-- [ ] Add `explainInvalidPlay(cards, currentTrick, { mustInclude3S, lastPlayedBy })` to `src/game/moves.ts`. It returns `null` when the play is legal, otherwise one short sentence:
+- [ ] Add `explainInvalidPlay(cards, currentTrick, { mustInclude3S, lastPlayedBy, hasPassed })` to `src/game/moves.ts`. It returns `null` when the play is legal, otherwise one short sentence:
   - First play without 3♠: "Your first play must include 3♠."
   - Not a real combination: "That's not a valid combination."
   - Leading with a bomb: "Bombs can only be played on a single 2."
+  - Passed this round and the selection isn't a bomb on a single 2: "You passed — only a bomb brings you back."
   - Wrong type or size: "Minh played a pair — play a pair to beat it." (also for straight lengths: "…a 5-card straight…")
   - Right type but not high enough: "Your pair has to beat 6♣ 6♦."
 - [ ] In `Hand.tsx`, base `canPlay` on the same check (so the first-play rule disables Play too). While the selection is invalid, outline the selected cards in amber and show the message above the buttons with `role="status"`. With nothing selected, show no message. The button reads "Select cards", "Play" (when invalid) or "Play pair" (when valid).
@@ -114,7 +123,6 @@ Matches "Start".
 
 - [ ] Restyle `BeginScreen.tsx`: the four-color suit mark, a 44px title, "Daily #N · weekday, month day", three numbered rule steps, the "Watch the bots" note, the scoring line, and the Play button pinned to the bottom.
 - [ ] Restyle `ExpiredScreen` in `App.tsx` the same way, with a clock icon instead of emoji and a "Play today's puzzle" button. *Not drawn — extend the Start style.*
-- [ ] The header help button opens a "How to play" sheet that reuses the rule steps.
 
 ## Phase 6 — Results, sharing and confetti
 
@@ -136,7 +144,7 @@ Matches "Leaderboard" and "Replay".
 
 ## Phase 8 — Polish and cleanup
 
-- [ ] Remove leftover `green-9xx`, `yellow-*` and emoji UI, plus unused components (`TellHUD.tsx`, `BotPanel.tsx`).
+- [ ] Remove leftover `green-9xx`, `yellow-*` and emoji UI.
 - [ ] Accessibility pass: everything works with the keyboard, focus outlines are visible, icon-only buttons have `aria-label`, contrast is checked in both themes, and opponent rows and cards have labels.
 - [ ] Respect reduced motion for the card-lift and sheet animations as well as confetti.
 - [ ] Do a real-device check on iOS Safari and Android Chrome, including safe-area padding under the hand panel and the share menu.

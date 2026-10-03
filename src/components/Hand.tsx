@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Card, compareCards } from '../game/cards'
-import { Move, isValidPlay, isBomb } from '../game/moves'
+import { Move, isValidPlay, isBomb, moveName } from '../game/moves'
 import { PlayingCard } from './PlayingCard'
+import { fitStep, useWidth } from './CardFan'
+import { Button } from './ui/Button'
 
 interface Props {
   hand: Card[]
@@ -10,20 +12,30 @@ interface Props {
   onPlay: (cards: Card[]) => void
   onPass: () => void
   bombsOnly?: boolean // player passed this round: only a bomb (on a single 2) brings them back
+  waitingFor: string | null // name of the player whose turn it is, when it isn't ours
 }
 
-export function Hand({ hand, isActive, currentTrick, onPlay, onPass, bombsOnly = false }: Props) {
+const CARD_WIDTH = 48
+
+export function Hand({ hand, isActive, currentTrick, onPlay, onPass, bombsOnly = false, waitingFor }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const fanRef = useRef<HTMLDivElement>(null)
+  const width = useWidth(fanRef)
 
   const sorted = [...hand].sort(compareCards)
   const selectedCards = sorted.filter(c => selected.has(c.id))
+  const step = fitStep(sorted.length, CARD_WIDTH, width, 28, 16)
 
   const playType = selectedCards.length > 0 ? isValidPlay(selectedCards, currentTrick) : null
-  const canPlay = !!playType && (!bombsOnly || isBomb(playType))
+  const canPlay = isActive && !!playType && (!bombsOnly || isBomb(playType))
   const canPass = isActive && !!currentTrick
 
+  // Drop any selection once it's no longer our turn
+  useEffect(() => {
+    if (!isActive) setSelected(new Set())
+  }, [isActive])
+
   function toggleCard(card: Card) {
-    if (!isActive) return
     setSelected(prev => {
       const next = new Set(prev)
       if (next.has(card.id)) next.delete(card.id)
@@ -44,56 +56,47 @@ export function Hand({ hand, isActive, currentTrick, onPlay, onPass, bombsOnly =
     onPass()
   }
 
+  const playLabel = selectedCards.length === 0
+    ? 'Select cards'
+    : canPlay && playType
+      ? `Play ${moveName(playType, selectedCards.length)}`
+      : 'Play'
+
   return (
-    <div className="flex flex-col gap-3">
-      {/* Card row */}
-      <div className="flex gap-1 flex-wrap justify-center">
-        {sorted.map(card => (
+    <div className="flex flex-col gap-3.5">
+      <div className="flex items-center justify-between min-h-[26px]">
+        {isActive ? (
+          <span className="inline-flex items-center gap-1.5 h-[26px] px-2.5 rounded-full bg-accent/10 text-accent-text text-[13px] font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent-text" />
+            {bombsOnly ? 'Bomb back in?' : 'Your turn'}
+          </span>
+        ) : (
+          <span className="text-[13px] text-muted">{waitingFor ? `Waiting for ${waitingFor}…` : ''}</span>
+        )}
+        {isActive && <span className="text-[13px] text-muted">{selected.size} selected</span>}
+      </div>
+
+      <div ref={fanRef} className="flex justify-center pt-3.5">
+        {sorted.map((card, i) => (
           <PlayingCard
             key={card.id}
             card={card}
             size="md"
             selected={selected.has(card.id)}
-            onClick={() => toggleCard(card)}
+            onClick={isActive ? () => toggleCard(card) : undefined}
+            style={{ marginLeft: i === 0 ? 0 : step - CARD_WIDTH }}
           />
         ))}
       </div>
 
-      {/* Action buttons */}
-      {isActive && (
-        <div className="flex gap-3 justify-center items-center">
-          <button
-            onClick={handlePlay}
-            disabled={!canPlay}
-            className={`
-              px-6 py-2 rounded-lg font-semibold text-sm transition-colors
-              ${canPlay
-                ? 'bg-yellow-500 hover:bg-yellow-400 text-black'
-                : 'bg-gray-700 text-gray-500 cursor-not-allowed'}
-            `}
-          >
-            Play {selectedCards.length > 0 ? `(${selectedCards.length})` : ''}
-          </button>
-          <button
-            onClick={handlePass}
-            disabled={!canPass}
-            className={`
-              px-6 py-2 rounded-lg font-semibold text-sm transition-colors
-              ${canPass
-                ? 'bg-gray-600 hover:bg-gray-500 text-white'
-                : 'bg-gray-800 text-gray-600 cursor-not-allowed'}
-            `}
-          >
-            Pass
-          </button>
-        </div>
-      )}
-
-      {!isActive && hand.length > 0 && (
-        <div className="text-center text-gray-500 text-sm italic animate-pulse">
-          Waiting for other players…
-        </div>
-      )}
+      <div className="grid grid-cols-[1fr_2fr] gap-2">
+        <Button variant="secondary" onClick={handlePass} disabled={!canPass}>
+          Pass
+        </Button>
+        <Button onClick={handlePlay} disabled={!canPlay}>
+          {playLabel}
+        </Button>
+      </div>
     </div>
   )
 }

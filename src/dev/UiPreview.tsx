@@ -2,7 +2,7 @@
 // Not included in production builds (see App.tsx).
 import { useState } from 'react'
 import { Card, RANKS, SUITS } from '../game/cards'
-import { ThemePref, useThemePref } from '../theme'
+import { ThemeSwitch } from '../components/ThemeSwitch'
 import { PlayingCard, CardSize } from '../components/PlayingCard'
 import { Button } from '../components/ui/Button'
 import { IconButton } from '../components/ui/IconButton'
@@ -20,7 +20,6 @@ const SAMPLE = SUITS.map((s, i) => card(RANKS[i * 3 + 1], s))
 const HAND = [card('4', '♦'), card('7', '♠'), card('7', '♥'), card('9', '♣'), card('2', '♠')]
 
 export default function UiPreview() {
-  const [theme, setTheme] = useThemePref()
   const [selected, setSelected] = useState<Set<string>>(new Set(['7♠', '7♥']))
   const [warn, setWarn] = useState(false)
   const [sheetOpen, setSheetOpen] = useState(false)
@@ -39,21 +38,7 @@ export default function UiPreview() {
       <div className="max-w-3xl mx-auto flex flex-col gap-10">
         <header className="flex flex-wrap items-center justify-between gap-4">
           <h1 className="text-2xl font-semibold tracking-tight">UI preview</h1>
-          <div role="radiogroup" aria-label="Theme" className="flex gap-1 p-1 rounded-full bg-chip">
-            {(['system', 'light', 'dark'] as ThemePref[]).map(p => (
-              <button
-                key={p}
-                role="radio"
-                aria-checked={theme === p}
-                onClick={() => setTheme(p)}
-                className={`h-9 px-4 rounded-full text-sm font-medium capitalize ${
-                  theme === p ? 'bg-surface shadow-sm shadow-shadow/10' : 'text-muted'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
+          <ThemeSwitch />
         </header>
 
         <Section title="Card sizes (face up and back)">

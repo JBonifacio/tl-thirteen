@@ -101,6 +101,25 @@ export function isValidPlay(cards: Card[], currentTrick: Move | null): MoveType 
   return type
 }
 
+// ── labels ────────────────────────────────────────────────────────────────────
+
+/** Short name for a combination, e.g. "pair", "5-card straight", "four of a kind". */
+export function moveName(type: MoveType, cardCount: number): string {
+  switch (type) {
+    case 'single': return 'single'
+    case 'pair': return 'pair'
+    case 'triple': return 'triple'
+    case 'four_of_a_kind': return 'four of a kind'
+    case 'sequence': return `${cardCount}-card straight`
+    case 'sequence_of_pairs': return `${cardCount / 2}-pair sequence`
+  }
+}
+
+/** "a pair", "four of a kind" — for sentences like "Minh played a pair". */
+export function moveNameWithArticle(type: MoveType, cardCount: number): string {
+  return type === 'four_of_a_kind' ? moveName(type, cardCount) : `a ${moveName(type, cardCount)}`
+}
+
 /**
  * A player who passed is out until the round ends — except that when the play
  * on the table is a single 2, they may come back in with a bomb.

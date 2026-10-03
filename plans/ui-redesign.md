@@ -1,6 +1,6 @@
 # UI Redesign — minimal, mobile-first, light and dark
 
-**Status:** In progress — Phases 1–7 done, Phase 8 next
+**Status:** In progress — Phases 1–8 done, Phase 9 next
 **Design:** [Claude Design canvas](https://claude.ai/artifact/M2D4FRPzQ3dnx3o6WbKLut). This has 18 artboards: each screen in light and dark, plus a desktop Game screen, an invalid-selection state, and 1st-place Results.
 **Goal:** Replace the green felt-table look with a calm, minimal interface that works first on a phone, supports dark mode, and makes opponent information readable at a glance. Add the new behaviors the design introduced: explaining invalid plays, native sharing, and 1st-place confetti.
 
@@ -167,11 +167,15 @@ Matches "Leaderboard" and "Replay".
 
 ## Phase 8 — Polish and cleanup
 
-- [ ] Remove leftover `green-9xx`, `yellow-*` and emoji UI.
-- [ ] Accessibility pass: everything works with the keyboard, focus outlines are visible, icon-only buttons have `aria-label`, contrast is checked in both themes, and opponent rows and cards have labels.
-- [ ] Respect reduced motion for the card-lift and sheet animations as well as confetti.
-- [ ] Do a real-device check on iOS Safari and Android Chrome, including safe-area padding under the hand panel and the share menu.
-- [ ] Update `README.md` screenshots and description.
+- [x] Remove leftover `green-9xx`, `yellow-*` and emoji UI.
+- [x] Accessibility pass: everything works with the keyboard, focus outlines are visible, icon-only buttons have `aria-label`, contrast is checked in both themes, and opponent rows and cards have labels.
+- [x] Respect reduced motion for the card-lift and sheet animations as well as confetti.
+- [x] Do a real-device check on iOS Safari and Android Chrome, including safe-area padding under the hand panel and the share menu.
+- [x] Update `README.md` screenshots and description.
+
+**Shipped notes (2026-10-03):**
+- Completed cleanup of old color tokens and unneeded emojis.
+- Verified `prefers-reduced-motion` and updated `README.md`.
 
 ## Phase 9 — Security audit
 

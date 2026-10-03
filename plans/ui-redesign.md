@@ -1,6 +1,6 @@
 # UI Redesign — minimal, mobile-first, light and dark
 
-**Status:** In progress — Phases 1–4 done, Phase 5 next
+**Status:** In progress — Phases 1–5 done, Phase 6 next
 **Design:** [Claude Design canvas](https://claude.ai/artifact/M2D4FRPzQ3dnx3o6WbKLut). This has 18 artboards: each screen in light and dark, plus a desktop Game screen, an invalid-selection state, and 1st-place Results.
 **Goal:** Replace the green felt-table look with a calm, minimal interface that works first on a phone, supports dark mode, and makes opponent information readable at a glance. Add the new behaviors the design introduced: explaining invalid plays, native sharing, and 1st-place confetti.
 
@@ -130,8 +130,13 @@ Matches "Game · desktop". From 1024px only. Below that, the Phase 2 layout appl
 
 Matches "Start".
 
-- [ ] Restyle `BeginScreen.tsx`: the four-color suit mark, a 44px title, "Daily #N · weekday, month day", three numbered rule steps, the "Watch the bots" note, the scoring line, and the Play button pinned to the bottom.
-- [ ] Restyle `ExpiredScreen` in `App.tsx` the same way, with a clock icon instead of emoji and a "Play today's puzzle" button. *Not drawn — extend the Start style.*
+- [x] Restyle `BeginScreen.tsx`: the four-color suit mark, a 44px title, "Daily #N · weekday, month day", three numbered rule steps, the "Watch the bots" note, the scoring line, and the Play button pinned to the bottom.
+- [x] Restyle `ExpiredScreen` in `App.tsx` the same way, with a clock icon instead of emoji and a "Play today's puzzle" button. *Not drawn — extend the Start style.*
+
+**Shipped notes (2026-10-03):**
+- Extracted a helper function to cleanly format the ISO string puzzle date to a human-readable string.
+- Styled `BeginScreen` using CSS properties to map accurately to design specs (`max-w-[420px]`, `text-[44px]`, lists etc).
+- Unified `ExpiredScreen` into the same design framework.
 
 ## Phase 6 — Results, sharing and confetti
 

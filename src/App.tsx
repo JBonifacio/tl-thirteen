@@ -7,22 +7,27 @@ import { GameScreen } from './components/GameScreen'
 const UiPreview = import.meta.env.DEV ? lazy(() => import('./dev/UiPreview')) : null
 const showPreview = !!UiPreview && new URLSearchParams(window.location.search).has('preview')
 
+import { Icon } from './components/ui/Icon'
+import { Button } from './components/ui/Button'
+
 function ExpiredScreen({ puzzleDate }: { puzzleDate: string }) {
   return (
-    <div className="min-h-screen bg-green-950 flex items-center justify-center p-4">
-      <div className="max-w-sm w-full bg-green-900 rounded-2xl shadow-2xl p-8 text-center flex flex-col gap-4">
-        <div className="text-5xl">🕰️</div>
-        <h1 className="text-2xl font-bold text-white">Puzzle Expired</h1>
-        <p className="text-gray-300 text-sm">
-          The puzzle for <span className="font-mono text-yellow-300">{puzzleDate}</span> is no
-          longer available. Puzzles can only be played within 24 hours of their date.
-        </p>
-        <a
-          href="/"
-          className="mt-2 py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-colors block"
-        >
-          Play Today's Puzzle
-        </a>
+    <div className="min-h-[100dvh] bg-bg text-ink flex flex-col items-center justify-center p-5 font-sans">
+      <div className="flex flex-col items-center w-full max-w-[420px] text-center gap-6">
+        <div className="w-16 h-16 rounded-full bg-surface border border-line flex items-center justify-center text-muted mb-2">
+          <Icon name="clock" size={32} strokeWidth={1.5} />
+        </div>
+        <div className="flex flex-col gap-2">
+          <h1 className="text-[28px] font-bold tracking-tight">Puzzle Expired</h1>
+          <p className="text-[15px] text-muted leading-relaxed">
+            The puzzle for <span className="font-mono bg-chip px-1.5 py-0.5 rounded text-[14px] text-ink">{puzzleDate}</span> is no longer available. Puzzles can only be played within 24 hours of their date.
+          </p>
+        </div>
+        <div className="w-full mt-4">
+          <Button onClick={() => window.location.assign('/')} className="w-full">
+            Play Today's Puzzle
+          </Button>
+        </div>
       </div>
     </div>
   )

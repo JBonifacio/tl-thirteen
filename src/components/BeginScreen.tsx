@@ -1,63 +1,78 @@
 import { useGameStore } from '../store/gameStore'
+import { Button } from './ui/Button'
+import { Icon } from './ui/Icon'
+
+function formatDate(isoDate: string): string {
+  return new Date(`${isoDate}T00:00:00Z`).toLocaleDateString('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  })
+}
 
 export function BeginScreen() {
   const { puzzleNumber, puzzleDate, startGame } = useGameStore()
 
   return (
-    <div className="min-h-screen bg-green-950 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-green-900 rounded-2xl shadow-2xl p-8 flex flex-col gap-6">
-        {/* Title */}
-        <div className="text-center">
-          <div className="text-4xl mb-2">🃏</div>
-          <h1 className="text-3xl font-bold text-white">Tien Len Daily</h1>
-          <p className="text-green-400 text-sm mt-1">
-            #{puzzleNumber} · {puzzleDate}
+    <div className="min-h-[100dvh] bg-bg text-ink flex flex-col items-center pt-[10vh] pb-[max(24px,env(safe-area-inset-bottom))] px-5 font-sans">
+      <div className="flex-1 flex flex-col items-center w-full max-w-[420px]">
+        
+        {/* Suit mark & Title */}
+        <div className="flex flex-col items-center mb-10 text-center">
+          <div className="flex items-center gap-1.5 text-[22px] mb-4">
+            <span className="text-suit-spade">♠</span>
+            <span className="text-suit-heart">♥</span>
+            <span className="text-suit-club">♣</span>
+            <span className="text-suit-diamond">♦</span>
+          </div>
+          <h1 className="text-[44px] font-bold tracking-tight leading-[1.1] mb-2">Tien Len Daily</h1>
+          <p className="text-[15px] text-muted">
+            Daily <span className="font-mono">#{puzzleNumber}</span> · {formatDate(puzzleDate)}
           </p>
         </div>
 
         {/* Rules */}
-        <div className="bg-green-950 rounded-xl p-4 text-sm text-gray-300 space-y-2">
-          <p className="font-semibold text-white text-base">How to play</p>
-          <p>
-            Shed all your cards before your opponents. Cards rank{' '}
-            <span className="font-mono text-yellow-300">3 → 2</span> (low to high),
-            suits rank <span className="font-mono text-yellow-300">♠ ♣ ♦ ♥</span>.
-          </p>
-          <p>
-            Play singles, pairs, triples, straights, or sequences of pairs — always
-            beat the current play with the same type and count, or play a bomb
-            (four-of-a-kind or 3+ consecutive pairs) against a single 2.
-          </p>
-          <p>
-            Whoever holds <span className="font-mono text-yellow-300">3♠</span> leads
-            first. You can pass at any time when there's an active play — but once you
-            pass, you're out until the next round begins.
-          </p>
+        <div className="w-full flex flex-col gap-4 text-[14px] leading-relaxed mb-10">
+          <div className="flex gap-3">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-accent text-white text-[12px] font-bold flex-shrink-0">1</span>
+            <p>
+              Shed all your cards before your opponents. Cards rank <span className="font-mono bg-chip px-1 py-0.5 rounded text-[13px]">3 → 2</span>, suits rank <span className="font-mono bg-chip px-1 py-0.5 rounded text-[13px]">♠ ♣ ♦ ♥</span>.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-accent text-white text-[12px] font-bold flex-shrink-0">2</span>
+            <p>
+              Play singles, pairs, triples, straights, or sequences of pairs — beat the current play with the same type and count.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <span className="flex items-center justify-center w-6 h-6 rounded-full bg-accent text-white text-[12px] font-bold flex-shrink-0">3</span>
+            <p>
+              <span className="font-mono bg-chip px-1 py-0.5 rounded text-[13px]">3♠</span> leads first. Pass at any time — but once you pass, you're out until the next round begins.
+            </p>
+          </div>
         </div>
 
-        {/* Tell hint */}
-        <div className="bg-amber-900/40 border border-amber-700/50 rounded-xl p-4 text-sm text-amber-200">
-          <p className="font-semibold text-amber-300 mb-1">🔍 Watch the bots</p>
-          <p>
-            Each opponent has hidden behavioral patterns — tells. Watch how they play
-            and use what you learn to outmaneuver them. Tells are confirmed as you
-            observe them in action.
-          </p>
-        </div>
-
-        {/* Scoring */}
-        <div className="text-xs text-gray-400 text-center">
-          Finish <strong className="text-gray-200">1st</strong> in as few moves as possible.
-          Position first, then moves (including passes), then time — 1st in 10 moves beats 2nd in 5.
+        {/* Hints */}
+        <div className="w-full flex flex-col gap-3 text-[13px] text-muted mb-8">
+          <div className="flex gap-2.5">
+            <Icon name="eye" size={16} strokeWidth={2} className="flex-shrink-0 mt-[1px]" />
+            <p><strong className="text-ink font-medium">Watch the bots.</strong> Each opponent has hidden behavioral tells. Watch how they play to outmaneuver them.</p>
+          </div>
+          <div className="flex gap-2.5">
+            <Icon name="chart" size={16} strokeWidth={2} className="flex-shrink-0 mt-[1px]" />
+            <p><strong className="text-ink font-medium">Scoring.</strong> Finish 1st in as few moves as possible. Position first, then moves, then time.</p>
+          </div>
         </div>
 
         {/* Play button */}
-        <button
-          onClick={startGame}
-          className="w-full py-4 bg-yellow-500 hover:bg-yellow-400 active:bg-yellow-600 text-black font-bold text-lg rounded-xl transition-colors shadow-lg"
-        >
-          Play Puzzle #{puzzleNumber}
-        </button>
+        <div className="mt-auto w-full pt-6">
+          <Button onClick={startGame} className="w-full shadow-lg shadow-accent/20">
+            Play Puzzle
+          </Button>
+        </div>
+
       </div>
     </div>
   )

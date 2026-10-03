@@ -111,6 +111,8 @@ export function GameScreen() {
             onPlay={playerPlay}
             onPass={playerPass}
             bombsOnly={playerHasPassed}
+            mustInclude3S={playLog.length === 0}
+            lastPlayedBy={lastPlayedBy}
             waitingFor={isPlaying && currentPlayer !== 0 ? SEAT_NAMES[currentPlayer] : null}
           />
         </section>

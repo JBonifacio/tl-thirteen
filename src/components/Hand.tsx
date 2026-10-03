@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Card, compareCards } from '../game/cards'
-import { Move, isValidPlay, isBomb, moveName } from '../game/moves'
+import { Move, classifyMove, explainInvalidPlay, moveName } from '../game/moves'
 import { PlayingCard } from './PlayingCard'
 import { fitStep, useWidth } from './CardFan'
 import { Button } from './ui/Button'
+import { Icon } from './ui/Icon'
 
 interface Props {
   hand: Card[]
@@ -12,12 +13,24 @@ interface Props {
   onPlay: (cards: Card[]) => void
   onPass: () => void
   bombsOnly?: boolean // player passed this round: only a bomb (on a single 2) brings them back
+  mustInclude3S?: boolean // the game's opening play
+  lastPlayedBy: number // seat that played the current trick, for the invalid-play message
   waitingFor: string | null // name of the player whose turn it is, when it isn't ours
 }
 
 const CARD_WIDTH = 48
 
-export function Hand({ hand, isActive, currentTrick, onPlay, onPass, bombsOnly = false, waitingFor }: Props) {
+export function Hand({
+  hand,
+  isActive,
+  currentTrick,
+  onPlay,
+  onPass,
+  bombsOnly = false,
+  mustInclude3S = false,
+  lastPlayedBy,
+  waitingFor,
+}: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const fanRef = useRef<HTMLDivElement>(null)
   const width = useWidth(fanRef)
@@ -26,8 +39,11 @@ export function Hand({ hand, isActive, currentTrick, onPlay, onPass, bombsOnly =
   const selectedCards = sorted.filter(c => selected.has(c.id))
   const step = fitStep(sorted.length, CARD_WIDTH, width, 28, 16)
 
-  const playType = selectedCards.length > 0 ? isValidPlay(selectedCards, currentTrick) : null
-  const canPlay = isActive && !!playType && (!bombsOnly || isBomb(playType))
+  const problem = isActive
+    ? explainInvalidPlay(selectedCards, currentTrick, { mustInclude3S, lastPlayedBy, hasPassed: bombsOnly })
+    : null
+  const playType = selectedCards.length > 0 ? classifyMove(selectedCards) : null
+  const canPlay = isActive && !!playType && problem === null
   const canPass = isActive && !!currentTrick
 
   // Drop any selection once it's no longer our turn
@@ -83,11 +99,25 @@ export function Hand({ hand, isActive, currentTrick, onPlay, onPass, bombsOnly =
             card={card}
             size="md"
             selected={selected.has(card.id)}
+            tone={problem ? 'warn' : 'accent'}
             onClick={isActive ? () => toggleCard(card) : undefined}
             style={{ marginLeft: i === 0 ? 0 : step - CARD_WIDTH }}
           />
         ))}
       </div>
+
+      {/* Always mounted so screen readers announce changes; two lines reserved so nothing jumps */}
+      <p
+        role="status"
+        className="-my-1 min-h-[36px] flex items-center justify-center gap-1.5 text-center text-[13px] leading-[18px] text-warn"
+      >
+        {problem && (
+          <>
+            <Icon name="alert" size={14} strokeWidth={2} className="flex-shrink-0" />
+            <span>{problem}</span>
+          </>
+        )}
+      </p>
 
       <div className="grid grid-cols-[1fr_2fr] gap-2">
         <Button variant="secondary" onClick={handlePass} disabled={!canPass}>

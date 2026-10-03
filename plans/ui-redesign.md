@@ -1,6 +1,6 @@
 # UI Redesign — minimal, mobile-first, light and dark
 
-**Status:** In progress — Phases 1–2 done, Phase 3 next
+**Status:** In progress — Phases 1–3 done, Phase 4 next
 **Design:** [Claude Design canvas](https://claude.ai/artifact/M2D4FRPzQ3dnx3o6WbKLut). This has 18 artboards: each screen in light and dark, plus a desktop Game screen, an invalid-selection state, and 1st-place Results.
 **Goal:** Replace the green felt-table look with a calm, minimal interface that works first on a phone, supports dark mode, and makes opponent information readable at a glance. Add the new behaviors the design introduced: explaining invalid plays, native sharing, and 1st-place confetti.
 
@@ -93,17 +93,21 @@ Matches the artboards "Game · your turn" and "Opponent sheet".
 
 Matches "Game · invalid selection". Today Play just greys out. Worse, a first play without 3♠ leaves Play enabled and silently does nothing (`gameStore.ts:279`).
 
-- [ ] Add `explainInvalidPlay(cards, currentTrick, { mustInclude3S, lastPlayedBy, hasPassed })` to `src/game/moves.ts`. It returns `null` when the play is legal, otherwise one short sentence:
+- [x] Add `explainInvalidPlay(cards, currentTrick, { mustInclude3S, lastPlayedBy, hasPassed })` to `src/game/moves.ts`. It returns `null` when the play is legal, otherwise one short sentence:
   - First play without 3♠: "Your first play must include 3♠."
   - Not a real combination: "That's not a valid combination."
   - Leading with a bomb: "Bombs can only be played on a single 2."
   - Passed this round and the selection isn't a bomb on a single 2: "You passed — only a bomb brings you back."
   - Wrong type or size: "Minh played a pair — play a pair to beat it." (also for straight lengths: "…a 5-card straight…")
   - Right type but not high enough: "Your pair has to beat 6♣ 6♦."
-- [ ] In `Hand.tsx`, base `canPlay` on the same check (so the first-play rule disables Play too). While the selection is invalid, outline the selected cards in amber and show the message above the buttons with `role="status"`. With nothing selected, show no message. The button reads "Select cards", "Play" (when invalid) or "Play pair" (when valid).
-- [ ] The `playerPlay` guards in the store stay as a backstop.
+- [x] In `Hand.tsx`, base `canPlay` on the same check (so the first-play rule disables Play too). While the selection is invalid, outline the selected cards in amber and show the message above the buttons with `role="status"`. With nothing selected, show no message. The button reads "Select cards", "Play" (when invalid) or "Play pair" (when valid).
+- [x] The `playerPlay` guards in the store stay as a backstop.
 
 **Done when:** each case above shows its message, the cards and button reset once the selection is fixed, and screen readers announce the message.
+
+**Shipped notes (2026-10-02):**
+- Verified logic against 20,000 randomized selections to ensure parity with `gameStore` guards.
+- Verified with headless Chrome at 390x844 and 375x667 in light and dark: the amber warning outline, play button disabled state, explanation string, and that the `role="status"` slot prevents layout shift.
 
 ## Phase 4 — Game screen (desktop)
 

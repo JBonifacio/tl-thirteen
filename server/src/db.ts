@@ -24,4 +24,10 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_scores_date ON scores(puzzle_date);
 `)
 
+try {
+  db.exec('ALTER TABLE scores ADD COLUMN token TEXT;')
+} catch (e) {
+  // column already exists
+}
+
 export default db

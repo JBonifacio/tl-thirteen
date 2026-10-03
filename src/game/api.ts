@@ -21,10 +21,28 @@ export interface SubmitScoreParams {
 }
 
 export async function submitScore(params: SubmitScoreParams): Promise<LeaderboardResponse> {
+  // basic obfuscation payload to prevent casual POST requests
+  const secret = 'tl_thirteen_salt_2026'
+  const msg = `${params.puzzleDate}:${params.nickname.trim()}:${params.position}:${params.moves}:${params.elapsedMs}:${params.hintPenaltyMs}`
+  
+  const encoder = new TextEncoder()
+  const data = encoder.encode(msg + secret)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  const signature = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+
+  let token = localStorage.getItem('tl_token')
+  if (!token) {
+    token = crypto.randomUUID()
+    localStorage.setItem('tl_token', token)
+  }
+
+  const payload = { ...params, nickname: params.nickname.trim(), signature, token }
+
   const res = await fetch('/api/scores', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
+    body: JSON.stringify(payload),
   })
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))

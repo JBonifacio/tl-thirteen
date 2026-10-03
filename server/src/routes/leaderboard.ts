@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express'
 import db from '../db'
 import { isCleanNickname } from '../middleware/profanity'
+import crypto from 'crypto'
 
 const router = Router()
 
@@ -29,6 +30,8 @@ interface ScoreBody {
   moves: number
   elapsedMs: number
   hintPenaltyMs: number
+  signature?: string
+  token?: string
 }
 
 interface ScoreRow {
@@ -44,7 +47,7 @@ function getLeaderboard(puzzleDate: string) {
     SELECT nickname, position, moves, elapsed_ms, hint_penalty_ms
     FROM scores
     WHERE puzzle_date = ?
-    ORDER BY position ASC, moves ASC, elapsed_ms ASC
+    ORDER BY position ASC, moves ASC, (elapsed_ms + hint_penalty_ms) ASC
   `).all(puzzleDate) as ScoreRow[]
 }
 
@@ -63,10 +66,24 @@ function buildResponse(puzzleDate: string, nickname?: string) {
   return { scores, yourRank }
 }
 
+function verifySignature(body: ScoreBody): boolean {
+  if (!body.signature) return false
+  const secret = 'tl_thirteen_salt_2026'
+  const nickname = typeof body.nickname === 'string' ? body.nickname.trim() : ''
+  const msg = `${body.puzzleDate}:${nickname}:${body.position}:${body.moves}:${body.elapsedMs}:${body.hintPenaltyMs || 0}`
+  const hash = crypto.createHash('sha256').update(msg + secret).digest('hex')
+  return hash === body.signature
+}
+
 // POST /api/scores
 router.post('/scores', (req: Request, res: Response) => {
   try {
     const body = req.body as ScoreBody
+
+    if (!verifySignature(body)) {
+      res.status(403).json({ error: 'Invalid payload signature' })
+      return
+    }
 
     // Validate puzzleDate
     if (!body.puzzleDate || !isValidDate(body.puzzleDate)) {
@@ -116,17 +133,30 @@ router.post('/scores', (req: Request, res: Response) => {
       return
     }
 
+    const token = typeof body.token === 'string' ? body.token : ''
+    if (!token) {
+      res.status(400).json({ error: 'Missing token' })
+      return
+    }
+
+    // Check if nickname exists for this date and verify token
+    const existing = db.prepare(`SELECT token FROM scores WHERE puzzle_date = ? AND nickname = ? COLLATE NOCASE`).get(body.puzzleDate, nickname) as { token: string | null } | undefined
+    if (existing && existing.token !== null && existing.token !== token) {
+      res.status(403).json({ error: 'Nickname already taken by another user today' })
+      return
+    }
+
     // Insert or replace
     db.prepare(`
-      INSERT INTO scores (puzzle_date, nickname, position, moves, elapsed_ms, hint_penalty_ms)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO scores (puzzle_date, nickname, position, moves, elapsed_ms, hint_penalty_ms, token)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(puzzle_date, nickname COLLATE NOCASE) DO UPDATE SET
         position = excluded.position,
         moves = excluded.moves,
         elapsed_ms = excluded.elapsed_ms,
         hint_penalty_ms = excluded.hint_penalty_ms,
         created_at = datetime('now')
-    `).run(body.puzzleDate, nickname, position, moves, elapsedMs, hintPenaltyMs)
+    `).run(body.puzzleDate, nickname, position, moves, elapsedMs, hintPenaltyMs, token)
 
     res.json(buildResponse(body.puzzleDate, nickname))
   } catch (err) {

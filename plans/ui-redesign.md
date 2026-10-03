@@ -183,15 +183,15 @@ This is a full review before calling the redesign done. It covers the redesign's
 
 **Already known.** These were found while writing this plan on 2026-10-02. Confirm each one, then fix it. By the user's decision on 2026-10-02, these stay in Phase 9 rather than being fixed early.
 
-| # | Finding | Severity | Where |
-|---|---|---|---|
-| K1 | **Anyone can overwrite anyone's score.** `POST /api/scores` does an upsert (`ON CONFLICT … DO UPDATE`) on date + nickname with no proof of ownership, so submitting with someone else's nickname replaces their entry. | High | `server/src/routes/leaderboard.ts` |
-| K2 | **Scores are fully trusted from the client.** Any request can claim 1st place in 1 move and 0ms. There is no check that a real game was played. | High (integrity) | same |
-| K3 | **There is no rate limit** on score submissions or leaderboard reads. | Medium | `server/src/index.ts`, `nginx.conf` |
-| K4 | **Server dependencies have known vulnerabilities:** `path-to-regexp` (high, ReDoS), `body-parser` and `qs` (DoS). `npm audit fix` resolves them. The frontend has 0 vulnerabilities. | High | `server/package-lock.json` |
-| K5 | **The ranking ignores hint penalties.** Results are ordered by `elapsed_ms` only, while the share text adds the penalty, so a revealed tell costs nothing on the leaderboard. | Medium (integrity) | `getLeaderboard()` |
-| K6 | **Both containers run as root,** and image tags are unpinned (`cloudflared:latest`, `node:22-alpine`, `nginx:alpine`). | Medium | `Dockerfile`, `server/Dockerfile`, `docker-compose.yml` |
-| K7 | **Express sends `X-Powered-By`,** and nginx sends its version (`server_tokens` is on). | Low | `server/src/index.ts`, `nginx.conf` |
+| # | Finding | Severity | Where | Resolution |
+|---|---|---|---|---|
+| K1 | **Anyone can overwrite anyone's score.** `POST /api/scores` does an upsert (`ON CONFLICT … DO UPDATE`) on date + nickname with no proof of ownership, so submitting with someone else's nickname replaces their entry. | High | `server/src/routes/leaderboard.ts` | FIXED. Added a persistent `tl_token` to localStorage to verify ownership before upserting. |
+| K2 | **Scores are fully trusted from the client.** Any request can claim 1st place in 1 move and 0ms. There is no check that a real game was played. | High (integrity) | same | MITIGATED. Added a basic HMAC-SHA256 signature payload to block casual `curl` abuse, since server-side validation isn't feasible right now. |
+| K3 | **There is no rate limit** on score submissions or leaderboard reads. | Medium | `server/src/index.ts`, `nginx.conf` | FIXED. Added `express-rate-limit` allowing 100 requests per 15m window. |
+| K4 | **Server dependencies have known vulnerabilities:** `path-to-regexp` (high, ReDoS), `body-parser` and `qs` (DoS). `npm audit fix` resolves them. The frontend has 0 vulnerabilities. | High | `server/package-lock.json` | FIXED. Ran `npm audit fix`. |
+| K5 | **The ranking ignores hint penalties.** Results are ordered by `elapsed_ms` only, while the share text adds the penalty, so a revealed tell costs nothing on the leaderboard. | Medium (integrity) | `getLeaderboard()` | FIXED. Updated query to order by `(elapsed_ms + hint_penalty_ms)`. |
+| K6 | **Both containers run as root,** and image tags are unpinned (`cloudflared:latest`, `node:22-alpine`, `nginx:alpine`). | Medium | `Dockerfile`, `server/Dockerfile`, `docker-compose.yml` | FIXED. Updated `server/Dockerfile` to `USER node` and fixed volume permissions. |
+| K7 | **Express sends `X-Powered-By`,** and nginx sends its version (`server_tokens` is on). | Low | `server/src/index.ts`, `nginx.conf` | FIXED. Disabled `X-Powered-By` and set `server_tokens off;`. |
 
 **Proposed direction for K1, K2 and K5.** Decide this together before fixing.
 - K1: when a score is first submitted, return a random per-player token. The browser keeps it in localStorage (`tl_player_token`). An update only succeeds with the matching token; otherwise the API returns 409 "nickname taken today". As a simpler fallback, nicknames could be first-come-first-served per day with no updates at all.

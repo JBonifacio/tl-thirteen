@@ -71,14 +71,15 @@ export function findLeaderAfterWin(
   return winner
 }
 
-export function buildShareText(
+export function buildShareParts(
   puzzleNumber: number,
   puzzleDate: string,
   position: number,
   elapsedMs: number,
   moveCount: number,
   hintPenaltyMs: number,
-): string {
+  isRetry: boolean,
+) {
   const medals = ['\uD83E\uDD47', '\uD83E\uDD48', '\uD83E\uDD49', '']
   const medal = medals[position - 1] ?? ''
   const posLabel = ['1st', '2nd', '3rd', '4th'][position - 1] ?? `${position}th`
@@ -92,15 +93,33 @@ export function buildShareText(
     ? ` (+${Math.floor(hintPenaltyMs / 1000 / 60)}:${String(Math.floor(hintPenaltyMs / 1000) % 60).padStart(2, '0')} hint)`
     : ''
 
-  const url = `${window.location.origin}?d=${puzzleDate}`
-
-  return [
-    `Tien Len Daily #${puzzleNumber} \uD83C\uDCCF`,
+  const title = `Tien Len Daily #${puzzleNumber} \uD83C\uDCCF`
+  const text = isRetry ? [
+    title,
+    `Finished: ${posLabel} ${medal}`,
+    `(Retry)`,
+  ].join('\n') : [
+    title,
     `Finished: ${posLabel} ${medal}`,
     `Moves: ${moveCount}`,
     `Time: ${timeStr}${penaltyStr}`,
-    url,
   ].join('\n')
+  const url = `${window.location.origin}?d=${puzzleDate}`
+
+  return { title, text, url }
+}
+
+export function buildShareText(
+  puzzleNumber: number,
+  puzzleDate: string,
+  position: number,
+  elapsedMs: number,
+  moveCount: number,
+  hintPenaltyMs: number,
+  isRetry: boolean = false,
+): string {
+  const { text, url } = buildShareParts(puzzleNumber, puzzleDate, position, elapsedMs, moveCount, hintPenaltyMs, isRetry)
+  return `${text}\n${url}`
 }
 
 export type { Move }

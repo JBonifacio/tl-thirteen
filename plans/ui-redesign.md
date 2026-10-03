@@ -1,6 +1,6 @@
 # UI Redesign — minimal, mobile-first, light and dark
 
-**Status:** In progress — Phases 1–5 done, Phase 6 next
+**Status:** In progress — Phases 1–6 done, Phase 7 next
 **Design:** [Claude Design canvas](https://claude.ai/artifact/M2D4FRPzQ3dnx3o6WbKLut). This has 18 artboards: each screen in light and dark, plus a desktop Game screen, an invalid-selection state, and 1st-place Results.
 **Goal:** Replace the green felt-table look with a calm, minimal interface that works first on a phone, supports dark mode, and makes opponent information readable at a glance. Add the new behaviors the design introduced: explaining invalid plays, native sharing, and 1st-place confetti.
 
@@ -142,12 +142,17 @@ Matches "Start".
 
 Matches "Results" and "Results · 1st place". The rules from the retry work (v1.0) still hold: a retry shows "Retry #N" and hides Share, Leaderboard, Replay and the countdown.
 
-- [ ] Rebuild `ResultsModal.tsx` as a full screen on mobile and a centered 420px window on desktop: the large place number with its suffix, "Finished 2nd of 4", Moves / Time / Hint penalty tiles (the penalty tile in amber, shown only when there's a penalty), the next-puzzle countdown, a "What you'll share" preview, Share result plus a Copy button, Replay / Leaderboard / Bot tells tiles, and Play again.
-- [ ] Sharing (new): split `buildShareText` in `bot.ts` into `buildShareParts()` → `{ title, text, url }` and keep `buildShareText()` as the copy version (text plus link). Share result calls `navigator.share({ title, text, url })` when `navigator.canShare?.(...)` allows it, and does nothing if the player cancels. Otherwise it copies and shows "Copied". The Copy button always copies. A clipboard failure shows an inline message.
-- [ ] Confetti (new): `Confetti.tsx` with about 56 pieces made of CSS keyframes, in the suit colors plus gold and the accent. It plays once when `playerFinishPosition === 1` (including retries), sits above the content without blocking taps, removes itself after about 3.5 seconds, and doesn't show when reduced motion is on.
-- [ ] Rebuild the Bot Reveals pop-up on `Sheet` in the opponent-sheet style. *Not drawn.*
+- [x] Rebuild `ResultsModal.tsx` as a full screen on mobile and a centered 420px window on desktop: the large place number with its suffix, "Finished 2nd of 4", Moves / Time / Hint penalty tiles (the penalty tile in amber, shown only when there's a penalty), the next-puzzle countdown, a "What you'll share" preview, Share result plus a Copy button, Replay / Leaderboard / Bot tells tiles, and Play again.
+- [x] Sharing (new): split `buildShareText` in `bot.ts` into `buildShareParts()` → `{ title, text, url }` and keep `buildShareText()` as the copy version (text plus link). Share result calls `navigator.share({ title, text, url })` when `navigator.canShare?.(...)` allows it, and does nothing if the player cancels. Otherwise it copies and shows "Copied". The Copy button always copies. A clipboard failure shows an inline message.
+- [x] Confetti (new): `Confetti.tsx` with about 56 pieces made of CSS keyframes, in the suit colors plus gold and the accent. It plays once when `playerFinishPosition === 1` (including retries), sits above the content without blocking taps, removes itself after about 3.5 seconds, and doesn't show when reduced motion is on.
+- [x] Rebuild the Bot Reveals pop-up on `Sheet` in the opponent-sheet style. *Not drawn.*
 
 **Done when:** places 1–4 and the retry variant render correctly; Share opens the native share menu on a phone (iOS Safari and Android Chrome) and copies on desktop; confetti plays once, only for 1st place.
+
+**Shipped notes (2026-10-03):**
+- Extracted `buildShareParts` to allow usage of `navigator.share` natively.
+- Implemented `Confetti` using random CSS keyframes mapping to the suit colors.
+- Implemented responsive mobile/desktop `ResultsModal` overlay and converted `BotReveals` to use `Sheet`.
 
 ## Phase 7 — Leaderboard and replay
 

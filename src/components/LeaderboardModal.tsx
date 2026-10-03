@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { submitScore, getLeaderboard, type LeaderboardResponse } from '../game/api'
 import { markSubmitted, hasSubmitted } from '../game/session'
-import { formatTime, positionMedal } from '../game/puzzle'
+import { formatTime } from '../game/puzzle'
 import filter from 'leo-profanity'
+import { Sheet } from './ui/Sheet'
+import { Button } from './ui/Button'
 
 filter.loadDictionary()
 
@@ -16,6 +18,10 @@ interface Props {
   elapsedMs: number
   hintPenaltyMs: number
   onClose: () => void
+}
+
+function formatPlace(p: number) {
+  return `${p}${['st', 'nd', 'rd'][p - 1] ?? 'th'}`
 }
 
 export function LeaderboardModal({ puzzleDate, position, moves, elapsedMs, hintPenaltyMs, onClose }: Props) {
@@ -39,7 +45,10 @@ export function LeaderboardModal({ puzzleDate, position, moves, elapsedMs, hintP
 
   // Focus input when nickname view is shown
   useEffect(() => {
-    if (view === 'nickname') inputRef.current?.focus()
+    if (view === 'nickname') {
+      // small delay to let the sheet render/animate first
+      setTimeout(() => inputRef.current?.focus(), 100)
+    }
   }, [view])
 
   function validateNickname(name: string): string | null {
@@ -88,61 +97,66 @@ export function LeaderboardModal({ puzzleDate, position, moves, elapsedMs, hintP
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="max-w-sm w-full bg-green-900 rounded-2xl shadow-2xl p-6 flex flex-col gap-5">
-        <h2 className="text-2xl font-bold text-white text-center">Daily Leaderboard</h2>
-
-        {view === 'nickname' ? (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-            <div>
-              <label className="text-gray-300 text-sm block mb-1">Choose a nickname</label>
-              <input
-                ref={inputRef}
-                type="text"
-                value={nickname}
-                onChange={e => { setNickname(e.target.value); setError('') }}
-                onBlur={handleBlur}
-                maxLength={16}
-                placeholder="3-16 characters"
-                className="w-full px-3 py-2 bg-green-950 border border-green-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-yellow-500 transition-colors"
-              />
-              {error && <p className="text-red-400 text-xs mt-1">{error}</p>}
-            </div>
-
-            <button
-              type="submit"
-              disabled={submitting}
-              className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 disabled:bg-gray-700 disabled:text-gray-500 text-black font-bold rounded-xl transition-colors"
-            >
+    <Sheet
+      open={true}
+      onClose={onClose}
+      title="Leaderboard"
+      subtitle={view === 'leaderboard' && leaderboard ? `${leaderboard.scores.length} players` : undefined}
+    >
+      {view === 'nickname' ? (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-6 pt-2">
+          <div className="flex flex-col gap-2">
+            <label htmlFor="nickname" className="text-[13px] font-semibold text-ink">Choose a nickname</label>
+            <input
+              id="nickname"
+              ref={inputRef}
+              type="text"
+              value={nickname}
+              onChange={e => { setNickname(e.target.value); setError('') }}
+              onBlur={handleBlur}
+              maxLength={16}
+              placeholder="3-16 characters"
+              className={`
+                w-full px-4 py-3 bg-surface lg:bg-bg border rounded-xl text-[15px] text-ink placeholder:text-muted focus:outline-none transition-colors
+                ${error ? 'border-warn focus:border-warn' : 'border-line focus:border-accent'}
+              `}
+            />
+            {error && <p className="text-[13px] text-warn" role="alert">{error}</p>}
+          </div>
+          <div className="flex flex-col gap-3 mt-2">
+            <Button type="submit" disabled={submitting}>
               {submitting ? 'Submitting...' : 'Submit Score'}
-            </button>
-
-            <button
-              type="button"
-              onClick={onClose}
-              className="w-full py-2 text-gray-400 hover:text-white text-sm transition-colors"
-            >
-              Cancel
-            </button>
-          </form>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {loadError ? (
-              <p className="text-red-400 text-sm text-center">{loadError}</p>
-            ) : !leaderboard ? (
-              <p className="text-gray-400 text-sm text-center">Loading...</p>
-            ) : leaderboard.scores.length === 0 ? (
-              <p className="text-gray-400 text-sm text-center">No scores yet. Be the first!</p>
-            ) : (
-              <div className="max-h-64 overflow-y-auto">
-                <table className="w-full text-sm">
+            </Button>
+          </div>
+        </form>
+      ) : (
+        <div className="flex flex-col gap-6 pt-2">
+          {loadError ? (
+            <p className="text-[14px] text-warn text-center">{loadError}</p>
+          ) : !leaderboard ? (
+            <p className="text-[14px] text-muted text-center py-4">Loading...</p>
+          ) : leaderboard.scores.length === 0 ? (
+            <p className="text-[14px] text-muted text-center py-4">No scores yet. Be the first!</p>
+          ) : (
+            <>
+              {leaderboard.yourRank && (
+                <div className="bg-accent/10 border border-accent/20 rounded-2xl p-4 flex flex-col gap-1">
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-accent-text">Your Rank</span>
+                  <div className="flex items-baseline gap-2 text-ink">
+                    <span className="text-[32px] font-bold tracking-tight leading-none">#{leaderboard.yourRank}</span>
+                    <span className="text-[15px] font-medium text-muted">of {leaderboard.scores.length}</span>
+                  </div>
+                </div>
+              )}
+              <div className="max-h-[50vh] overflow-y-auto -mx-2 px-2 scrollbar-hide">
+                <table className="w-full text-[14px] text-left border-collapse">
                   <thead>
-                    <tr className="text-gray-400 text-xs uppercase tracking-wide">
-                      <th className="text-left py-1 px-1">#</th>
-                      <th className="text-left py-1 px-1">Player</th>
-                      <th className="text-center py-1 px-1">Place</th>
-                      <th className="text-right py-1 px-1">Moves</th>
-                      <th className="text-right py-1 px-1">Time</th>
+                    <tr className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted border-b border-line">
+                      <th className="py-2.5 px-2 font-semibold">#</th>
+                      <th className="py-2.5 px-2 font-semibold">Player</th>
+                      <th className="py-2.5 px-2 font-semibold text-center">Place</th>
+                      <th className="py-2.5 px-2 font-semibold text-right">Moves</th>
+                      <th className="py-2.5 px-2 font-semibold text-right">Time</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -151,32 +165,30 @@ export function LeaderboardModal({ puzzleDate, position, moves, elapsedMs, hintP
                       return (
                         <tr
                           key={i}
-                          className={isYou ? 'bg-yellow-500/15 text-yellow-200' : 'text-gray-200'}
+                          className={`border-b border-line/50 last:border-0 ${
+                            isYou ? 'bg-accent/5' : ''
+                          }`}
                         >
-                          <td className="py-1 px-1 tabular-nums">{i + 1}</td>
-                          <td className="py-1 px-1 truncate max-w-[100px]">
-                            {entry.nickname}{isYou && <span className="text-yellow-400 text-xs ml-1">(you)</span>}
+                          <td className="py-3 px-2 text-muted tabular-nums">{i + 1}</td>
+                          <td className="py-3 px-2 font-medium truncate max-w-[120px]">
+                            <span className={isYou ? 'text-accent-text' : 'text-ink'}>
+                              {entry.nickname}
+                            </span>
+                            {isYou && <span className="text-accent-text text-[12px] ml-1.5">(you)</span>}
                           </td>
-                          <td className="py-1 px-1 text-center">{positionMedal(entry.position) || entry.position}</td>
-                          <td className="py-1 px-1 text-right tabular-nums">{entry.moves}</td>
-                          <td className="py-1 px-1 text-right tabular-nums">{formatTime(entry.elapsedMs)}</td>
+                          <td className="py-3 px-2 text-center text-muted">{formatPlace(entry.position)}</td>
+                          <td className="py-3 px-2 text-right tabular-nums">{entry.moves}</td>
+                          <td className="py-3 px-2 text-right text-muted tabular-nums">{formatTime(entry.elapsedMs)}</td>
                         </tr>
                       )
                     })}
                   </tbody>
                 </table>
               </div>
-            )}
-
-            <button
-              onClick={onClose}
-              className="w-full py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition-colors"
-            >
-              Close
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
+            </>
+          )}
+        </div>
+      )}
+    </Sheet>
   )
 }

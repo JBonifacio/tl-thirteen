@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { SEAT_NAMES } from '../game/players'
 import { loadReplay, ReplayData } from '../game/session'
+import { Sheet } from './ui/Sheet'
+import { Button } from './ui/Button'
 
 interface Props {
   puzzleDate: string
@@ -40,77 +42,81 @@ export function ReplayModal({ puzzleDate, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60] p-4">
-      <div className="max-w-sm w-full bg-green-900 rounded-2xl shadow-2xl p-6 flex flex-col gap-4">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold text-white">Game Replay</h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+    <Sheet open={true} onClose={onClose} title="Game Replay">
+      <div className="flex flex-col pt-2 h-full max-h-[65vh] lg:max-h-[500px]">
+        {replay === null ? (
+          <p className="text-[14px] text-muted text-center py-4">No replay available.</p>
+        ) : (
+          <div className="flex-1 overflow-y-auto -mx-5 px-5 scrollbar-hide pb-4">
+            <div className="flex flex-col gap-6">
+              {replay.rounds.map((round, ri) => (
+                <div key={ri} className="flex flex-col gap-2">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.08em] text-muted sticky top-0 bg-surface lg:bg-bg py-1 z-10">
+                    Round {ri + 1}
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    {round.turns
+                      .filter(t => t.action !== 'finished')
+                      .map((turn, i) => {
+                        const name = SEAT_NAMES[turn.seat]
+                        const num = i + 1
+                        
+                        if (turn.action === 'skipped') {
+                          return (
+                            <div key={i} className="flex items-center gap-3 text-[14px] text-muted italic">
+                              <span className="w-5 text-right">{num}.</span>
+                              <span className="w-12 font-medium">{name}</span>
+                              <span>Skipped</span>
+                            </div>
+                          )
+                        }
+                        if (turn.action === 'pass') {
+                          return (
+                            <div key={i} className="flex items-center gap-3 text-[14px] text-muted">
+                              <span className="w-5 text-right">{num}.</span>
+                              <span className="w-12 font-medium">{name}</span>
+                              <span>Pass</span>
+                            </div>
+                          )
+                        }
+                        
+                        return (
+                          <div key={i} className="flex items-center gap-3 text-[14px] text-ink">
+                            <span className="w-5 text-right text-muted tabular-nums">{num}.</span>
+                            <span className="w-12 font-medium">{name}</span>
+                            <div className="flex flex-wrap gap-1">
+                              {turn.cards.map(c => {
+                                const suitClass = c.suit === '♥' ? 'text-suit-heart' : 
+                                                  c.suit === '♦' ? 'text-suit-diamond' : 
+                                                  c.suit === '♣' ? 'text-suit-club' : 'text-suit-spade'
+                                return (
+                                  <span key={c.id} className={`font-mono text-[13px] bg-chip px-1.5 py-0.5 rounded ${suitClass}`}>
+                                    {c.id}
+                                  </span>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )
+                      })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="pt-4 mt-auto">
+          <Button
+            onClick={handleCopy}
+            variant="secondary"
+            className="w-full"
+            icon={copyState === 'copied' ? 'check' : copyState === 'error' ? 'alert' : 'copy'}
           >
-            ✕
-          </button>
+            {copyState === 'copied' ? 'Copied' : copyState === 'error' ? 'Failed to copy' : 'Copy Replay'}
+          </Button>
         </div>
-
-        {/* Turn list */}
-        <div className="overflow-y-auto max-h-72 flex flex-col gap-3">
-          {replay === null ? (
-            <p className="text-gray-400 text-sm text-center">No replay available.</p>
-          ) : (
-            replay.rounds.map((round, ri) => (
-              <div key={ri}>
-                <div className="text-gray-400 text-xs font-semibold uppercase tracking-wide mb-1">
-                  Round {ri + 1}
-                </div>
-                <div className="font-mono text-sm space-y-0.5">
-                  {round.turns
-                    .filter(t => t.action !== 'finished')
-                    .map((turn, i) => {
-                      const name = SEAT_NAMES[turn.seat]
-                      const num = i + 1
-                      if (turn.action === 'skipped') {
-                        return (
-                          <div key={i} className="text-gray-500 italic">
-                            {num}. {name}: Skipped
-                          </div>
-                        )
-                      }
-                      if (turn.action === 'pass') {
-                        return (
-                          <div key={i} className="text-gray-200">
-                            {num}. {name}: Pass
-                          </div>
-                        )
-                      }
-                      return (
-                        <div key={i} className="text-gray-200">
-                          {num}. {name}: {turn.cards.map(c => c.id).join(' ')}
-                        </div>
-                      )
-                    })}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Copy button */}
-        <button
-          onClick={handleCopy}
-          className="w-full py-3 bg-green-700 hover:bg-green-600 text-white font-bold rounded-xl transition-colors text-sm"
-        >
-          {copyState === 'copied' ? '✓ Copied!' : copyState === 'error' ? 'Copy failed — check permissions' : 'Copy'}
-        </button>
-
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="w-full py-2 text-gray-400 hover:text-white text-sm transition-colors"
-        >
-          Close
-        </button>
       </div>
-    </div>
+    </Sheet>
   )
 }

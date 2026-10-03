@@ -1,6 +1,6 @@
 # UI Redesign — minimal, mobile-first, light and dark
 
-**Status:** In progress — Phases 1–6 done, Phase 7 next
+**Status:** In progress — Phases 1–7 done, Phase 8 next
 **Design:** [Claude Design canvas](https://claude.ai/artifact/M2D4FRPzQ3dnx3o6WbKLut). This has 18 artboards: each screen in light and dark, plus a desktop Game screen, an invalid-selection state, and 1st-place Results.
 **Goal:** Replace the green felt-table look with a calm, minimal interface that works first on a phone, supports dark mode, and makes opponent information readable at a glance. Add the new behaviors the design introduced: explaining invalid plays, native sharing, and 1st-place confetti.
 
@@ -158,8 +158,12 @@ Matches "Results" and "Results · 1st place". The rules from the retry work (v1.
 
 Matches "Leaderboard" and "Replay".
 
-- [ ] Rebuild `LeaderboardModal.tsx` on `Sheet`: a header with the player count, a "Your rank" card in the accent tint, and a table (# / Player / Place / Moves / Time) using text places ("1st") instead of medal emoji, with your row highlighted. Restyle the nickname form to match: a labelled input, an inline error in warn color, and a primary Submit button. *The nickname form isn't drawn.*
-- [ ] Rebuild `ReplayModal.tsx` on `Sheet`: round headers, number / name / card-chip rows in suit colors, muted Pass and Skipped rows, and a Copy replay button. The copied text format stays the same.
+- [x] Rebuild `LeaderboardModal.tsx` on `Sheet`: a header with the player count, a "Your rank" card in the accent tint, and a table (# / Player / Place / Moves / Time) using text places ("1st") instead of medal emoji, with your row highlighted. Restyle the nickname form to match: a labelled input, an inline error in warn color, and a primary Submit button. *The nickname form isn't drawn.*
+- [x] Rebuild `ReplayModal.tsx` on `Sheet`: round headers, number / name / card-chip rows in suit colors, muted Pass and Skipped rows, and a Copy replay button. The copied text format stays the same.
+
+**Shipped notes (2026-10-03):**
+- Restyled `LeaderboardModal` to use `Sheet` and added the bold "Your Rank" accent card.
+- Rebuilt `ReplayModal` as a `Sheet` with scrollable content, rendering turns with `bg-chip` suit-colored text cards for easy scanning.
 
 ## Phase 8 — Polish and cleanup
 

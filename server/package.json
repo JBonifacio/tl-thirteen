@@ -11,6 +11,7 @@
     "better-sqlite3": "^11.7.0",
     "express": "^4.21.1",
     "express-rate-limit": "^8.7.0",
+    "helmet": "^8.1.0",
     "leo-profanity": "^1.7.0"
   },
   "devDependencies": {

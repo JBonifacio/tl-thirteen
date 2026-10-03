@@ -4,9 +4,13 @@ services:
     restart: unless-stopped
     # Ports exposed only internally - cloudflared handles external access
     expose:
-      - "80"
+      - "8080"
     depends_on:
       - api
+    networks: 
+      - default
+      - proxy-net
+
 
   api:
     build: ./server
@@ -19,15 +23,19 @@ services:
       - DB_PATH=/data/leaderboard.db
       - PORT=3001
 
-  cloudflared:
-    image: cloudflare/cloudflared:latest
-    restart: unless-stopped
-    command: tunnel --config /etc/cloudflared/config.yml run
-    volumes:
-      - ./cloudflare-tunnel.yml:/etc/cloudflared/config.yml:ro
-      - ./cloudflared-credentials.json:/etc/cloudflared/credentials.json:ro
-    depends_on:
-      - app
+  # cloudflared:
+  #   image: cloudflare/cloudflared:latest
+  #   restart: unless-stopped
+  #   command: tunnel --config /etc/cloudflared/config.yml run
+  #   volumes:
+  #     - ./cloudflare-tunnel.yml:/etc/cloudflared/config.yml:ro
+  #     - ./cloudflared-credentials.json:/etc/cloudflared/credentials.json:ro
+  #   depends_on:
+  #     - app
 
 volumes:
   leaderboard-data:
+
+networks:
+  proxy-net:
+    external: true

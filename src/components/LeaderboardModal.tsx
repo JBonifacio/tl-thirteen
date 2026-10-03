@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { submitScore, getLeaderboard, type LeaderboardResponse } from '../game/api'
-import { markSubmitted, hasSubmitted } from '../game/session'
+import { markSubmitted, hasSubmitted, getUserToken } from '../game/session'
 import { formatTime } from '../game/puzzle'
 import filter from 'leo-profanity'
 import { Sheet } from './ui/Sheet'
@@ -80,6 +80,7 @@ export function LeaderboardModal({ puzzleDate, position, moves, elapsedMs, hintP
       const result = await submitScore({
         puzzleDate,
         nickname: trimmed,
+        userToken: getUserToken(),
         position,
         moves,
         elapsedMs,

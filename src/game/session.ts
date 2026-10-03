@@ -31,6 +31,19 @@ export interface StoredSession {
   confirmedTellIds: [string[], string[], string[]]
 }
 
+// ── User Token management ────────────────────────────────────────────────────
+
+const USER_TOKEN_KEY = 'tl_user_token'
+
+export function getUserToken(): string {
+  let token = localStorage.getItem(USER_TOKEN_KEY)
+  if (!token) {
+    token = crypto.randomUUID()
+    localStorage.setItem(USER_TOKEN_KEY, token)
+  }
+  return token
+}
+
 // ── Keys ──────────────────────────────────────────────────────────────────────
 
 const resultKey    = (date: string) => `tl_result_${date}`

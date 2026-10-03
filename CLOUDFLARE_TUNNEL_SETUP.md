@@ -63,7 +63,7 @@ credentials-file: /etc/cloudflared/credentials.json
 
 ingress:
   - hostname: <YOUR_DOMAIN>  # Replace with your domain (e.g., tl-thirteen.yourdomain.com)
-    service: http://app:80
+    service: http://app:8080
   - service: http_status:404
 ```
 
@@ -230,7 +230,7 @@ The Vite dev server is configured to proxy `/api` requests to `http://localhost:
 
 2. Check that the app service is healthy:
    ```bash
-   docker compose exec app curl http://localhost:80
+   docker compose exec app curl http://localhost:8080
    ```
 
 3. Verify ingress rules in `cloudflare-tunnel.yml` match your domain

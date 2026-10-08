@@ -1,6 +1,6 @@
 # Hand Selection — easier card taps on phones
 
-**Status:** Phase 1 done; Phase 2 not started.
+**Status:** Done. Phase 1 shipped; the planned Phase 2 (selection feedback) was dropped on 2026-10-08.
 **Design:** [Two-Row Hand Mockup](https://claude.ai/artifact/WxpkDMMzgVHWiKZDducbui). It shows the current single fan next to the proposed two-row hand at 390px. The proposed board is interactive and has a dark-mode tweak.
 **Goal:** Stop misclicks in the player's hand on phones. Today 13 cards share about 358px, so each card shows a strip of roughly 26px (as low as 16px) and every tap lands close to two cards. Give each card a tap target of at least 44px and make the selected state clearer.
 
@@ -17,9 +17,8 @@ Presentation only. No change to game rules, bots, scoring, leaderboard, replay d
 | Row overlap | Row 2 overlaps the bottom 20px of row 1. Row 1 cards keep 48×52px visible, and their rank and suit stay in the top-left corner | Costs about 52px of height instead of 72px, and the corner index is never covered |
 | When it applies | Below 1024px, and only when the hand has more than 7 cards. A hand of 7 or fewer stays in one row, where the step is already 44px or more | Small late-game hands should not jump to two rows |
 | Desktop | No change. The single fan from 1024px up already has room | Cards are 64px there with a 36px preferred step |
-| Selection lift | Selected cards lift 14px and sit above their neighbours in either row (`z-index`) | A lifted row 2 card overlaps row 1, so it must paint on top |
-| Stacking | The two rows must not create their own stacking context (no `transform`, `opacity` or `isolation` on the row wrappers) | Otherwise `z-index` on a card cannot lift it above the other row |
-| Tap behaviour | `touch-action: manipulation` on cards | Removes the 300ms tap delay and double-tap zoom |
+| Selection lift | Unchanged: selected cards lift 14px. A lifted row 2 card paints over row 1 because row 2 comes later in the DOM | No `z-index` needed |
+| Stacking | The two rows must not create their own stacking context (no `transform`, `opacity` or `isolation` on the row wrappers) | Otherwise a lifted card could not paint above the other row |
 
 ---
 
@@ -42,22 +41,10 @@ Changes `Hand.tsx` and the layout helper. No change to `PlayingCard` sizes.
 - Desktop (1280px) looks unchanged.
 - Light and dark mode both checked at 390px and desktop width.
 
-## Phase 2 — Selection feedback
-
-- [ ] Add `touch-action: manipulation` to the card button and a short press state (slight darken or scale) so a tap registers visibly before the lift.
-- [ ] Raise selected cards in `PlayingCard` with `z-10` (or the equivalent in its class list) and compare the lift distance with the mockup. Keep `-translate-y-3.5` unless it looks too small on a device.
-- [ ] Check the lift is clear of the status row above the hand and not clipped by an `overflow` on a parent.
-- [ ] Check that the invalid-play outline (`tone='warn'`) still reads clearly on the lifted cards in both themes.
-
-**Done when:**
-- `npm run build` passes.
-- Selecting and deselecting cards works in both rows with the pointer, a touch device or emulation, and the keyboard (Tab then Space or Enter).
-- There is no double-tap zoom on iOS Safari or Chrome for Android.
-- Light and dark mode checked at 390px and desktop width.
-
 ---
 
 ## Later
 
 - Press-to-peek: pressing a card raises it above its neighbours before you release (helps desktop and fat-finger cases).
 - Drag across cards to select several at once, useful for pairs and runs.
+- Dropped Phase 2 (selection feedback): `touch-action: manipulation` on cards, a short press state, an explicit `z-10` on selected cards, and re-checking the lift and warn outline. Revisit if taps still misfire on real devices.

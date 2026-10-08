@@ -87,9 +87,10 @@ See [CLOUDFLARE_TUNNEL_SETUP.md](./CLOUDFLARE_TUNNEL_SETUP.md) for complete depl
 ### Deploy updates
 
 ```bash
-git pull
-docker compose up -d --build
+./deploy.sh
 ```
+
+This runs `git pull --ff-only`, creates the `proxy-net` Docker network if it is missing, then `docker compose up -d --build`.
 
 The old container keeps serving traffic while the new image builds. Nginx restarts in under a second.
 

@@ -7,6 +7,9 @@ import { Button } from './ui/Button'
 import { Icon } from './ui/Icon'
 import { useMediaQuery } from '../hooks/useMediaQuery'
 
+const TWO_ROW_MIN = 7 // hands larger than this split into two rows on phones
+const ROW_OVERLAP = 20 // px of row 1 covered by row 2; the corner index stays visible
+
 interface Props {
   hand: Card[]
   isActive: boolean
@@ -38,8 +41,19 @@ export function Hand({
   const sorted = [...hand].sort(compareCards)
   const selectedCards = sorted.filter(c => selected.has(c.id))
   
+  // Phones split a big hand into two overlapping rows so every card keeps a 44px+ tap target
+  const twoRows = !isDesktop && sorted.length > TWO_ROW_MIN
+  const split = Math.ceil(sorted.length / 2)
+  const rows = twoRows ? [sorted.slice(0, split), sorted.slice(split)] : [sorted]
+
   const cardW = isDesktop ? 64 : 48
-  const step = fitStep(sorted.length, cardW, width, isDesktop ? 36 : 28, isDesktop ? 22 : 16)
+  const step = fitStep(
+    rows[0].length,
+    cardW,
+    width,
+    twoRows ? 52 : isDesktop ? 36 : 28,
+    twoRows ? 36 : isDesktop ? 22 : 16,
+  )
 
   const problem = isActive
     ? explainInvalidPlay(selectedCards, currentTrick, { mustInclude3S, lastPlayedBy, hasPassed: bombsOnly })
@@ -96,17 +110,26 @@ export function Hand({
 
       <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3.5 lg:gap-8">
         <div className="flex-1 min-w-0">
-          <div ref={fanRef} className="flex justify-center lg:justify-start pt-3.5">
-            {sorted.map((card, i) => (
-              <PlayingCard
-                key={card.id}
-                card={card}
-                size={isDesktop ? 'lg' : 'md'}
-                selected={selected.has(card.id)}
-                tone={problem ? 'warn' : 'accent'}
-                onClick={isActive ? () => toggleCard(card) : undefined}
-                style={{ marginLeft: i === 0 ? 0 : step - cardW }}
-              />
+          {/* Row wrappers stay un-transformed so a lifted row-2 card still paints over row 1 */}
+          <div ref={fanRef} className="flex flex-col pt-3.5">
+            {rows.map((row, r) => (
+              <div
+                key={r}
+                className="flex justify-center lg:justify-start"
+                style={r > 0 ? { marginTop: -ROW_OVERLAP } : undefined}
+              >
+                {row.map((card, i) => (
+                  <PlayingCard
+                    key={card.id}
+                    card={card}
+                    size={isDesktop ? 'lg' : 'md'}
+                    selected={selected.has(card.id)}
+                    tone={problem ? 'warn' : 'accent'}
+                    onClick={isActive ? () => toggleCard(card) : undefined}
+                    style={{ marginLeft: i === 0 ? 0 : step - cardW }}
+                  />
+                ))}
+              </div>
             ))}
           </div>
 

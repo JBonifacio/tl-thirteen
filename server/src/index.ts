@@ -1,6 +1,6 @@
 import express from 'express'
 import helmet from 'helmet'
-import rateLimit from 'express-rate-limit'
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 import leaderboardRoutes from './routes/leaderboard'
 
 const app = express()
@@ -19,6 +19,9 @@ const limiter = rateLimit({
   max: 100, // Limit each IP to 100 requests per windowMs
   standardHeaders: true,
   legacyHeaders: false,
+  // req.ip is the cloudflared container for every request, so key on the
+  // client IP nginx forwards from CF-Connecting-IP (absent in local dev)
+  keyGenerator: (req) => ipKeyGenerator(req.get('x-real-ip') || req.ip || ''),
   message: { error: 'Too many requests, please try again later.' }
 })
 
